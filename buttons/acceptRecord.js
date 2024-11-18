@@ -92,7 +92,6 @@ module.exports = {
 				{ name: 'Raw link', value: `${(record.raw == '' ? 'None' : record.raw)}` },
 				{ name: 'Mod menu', value: `${record.modMenu}` },
 				{ name: 'Additional Info', value: `${(record.additionalnotes == '' ? 'None' : record.additionalnotes)}` },
-				{ name: 'Github code', value: `${githubCode}` },
 			)
 			.setTimestamp();
 
