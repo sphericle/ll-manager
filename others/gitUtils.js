@@ -7,11 +7,11 @@ module.exports = {
 		const { git } = require('../index');
 
 		logger.info('Git - ' + 'Updating GitHub repository...');
-		
+
 		try {
 			const { repoUrl } = require("../config.json");
-			const localRepoPath =  path.resolve(__dirname, `../data/repo/`);
-			
+			const localRepoPath = path.resolve(__dirname, `../data/repo/`);
+
 			if (!fs.existsSync(localRepoPath)) {
 				logger.info('Git - ' + 'Cloning the repository for the first time, this may take a while...');
 				await git.clone(repoUrl, localRepoPath);
@@ -24,17 +24,17 @@ module.exports = {
 			return -1;
 		}
 		logger.info('Git - ' + 'Successfully updated the repository');
-		
+
 	},
 	async parseLevels(useLegacy) {
 		const levels = [];
-		const localRepoPath =  path.resolve(__dirname, `../data/repo/`);
+		const localRepoPath = path.resolve(__dirname, `../data/repo/`);
 		const listFilename = useLegacy ? 'data/_legacy.json' : 'data/_list.json';
 		let list_data;
 		try {
 			list_data = JSON.parse(fs.readFileSync(path.join(localRepoPath, listFilename), 'utf8'));
 		} catch (parseError) {
-			logger.error('Git - ' + `Unable to parse data from ${listFilename}:\n${parseError}`);
+			if (!listFilename.startsWith('_')) logger.error('Git - ' + `Unable to parse data from ${listFilename}:\n${parseError}`);
 			return -1;
 		}
 
@@ -44,13 +44,50 @@ module.exports = {
 			try {
 				parsedData = JSON.parse(fs.readFileSync(path.join(localRepoPath, `data/${filename}.json`), 'utf8'));
 			} catch (parseError) {
-				logger.error('Git - ' + `Unable to parse data from ${filename}.json:\n${parseError}`);
+				if (!filename.startsWith('_')) logger.error('Git - ' + `Unable to parse data from ${filename}.json:\n${parseError}`);
 				continue;
 			}
-			
-			levels.push({ name: parsedData.name, position: i, filename: filename});
+
+			levels.push({ name: parsedData.name, position: i, filename: filename });
 			i++;
 		}
 		return levels;
+	},
+
+	async parseUsers(useLegacy) {
+		const userset = new Set();
+		const localRepoPath = path.resolve(__dirname, `../data/repo/`);
+		const listFilename = useLegacy ? 'data/_legacy.json' : 'data/_list.json';
+		let list_data;
+		try {
+			list_data = JSON.parse(fs.readFileSync(path.join(localRepoPath, listFilename), 'utf8'));
+		} catch (parseError) {
+			logger.error('Git - ' + `Unable to parse data from ${listFilename}:\n${parseError}`);
+			return -1;
+		}
+
+		for (const filename of list_data) {
+			let parsedData;
+			try {
+				parsedData = JSON.parse(fs.readFileSync(path.join(localRepoPath, `data/${filename}.json`), 'utf8'));
+
+
+				userset.add(parsedData.author)
+				userset.add(parsedData.verifier)
+
+				for (const creator of parsedData.creators) {
+					userset.add(creator);
+				}
+				for (const record of parsedData.records) {
+					userset.add(record.user);
+				}
+			} catch (parseError) {
+				if (!filename.startsWith('_')) logger.error('Git - ' + `Unable to parse data from ${filename}.json:\n${parseError}`);
+				continue;
+			}
+		}
+
+		const users = Array.from(userset);
+		return users;
 	}
 }

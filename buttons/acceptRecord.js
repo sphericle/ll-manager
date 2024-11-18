@@ -32,13 +32,13 @@ module.exports = {
 		const user = await cache.users.findOne({ where: { name: record.username } });
 		if (!user) return await interaction.editReply(':x: Couldn\'t find the user this record was submitted for (their name might have changed since they submitted it)');
 		// Create embed to send with github code
-		const githubCode = `{\n\t\t"user": ${user.user_id},\n\t\t"link": "${record.completionlink}",\n\t\t"percent": 100,\n\t\t"hz": 360` + (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
+		const githubCode = `{\n\t\t"user": ${user.name},\n\t\t"link": "${record.completionlink}",\n\t\t"percent": 100,\n\t\t"hz": 360` + (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
 		
 		const level = await cache.levels.findOne({ where: {name: record.levelname}});
 		try {
 			await db.recordsToCommit.create({
 				filename: level.filename,
-				user: user.user_id,
+				user: user.name,
 				githubCode: githubCode,
 				discordid: '',
 			});
