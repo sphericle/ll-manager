@@ -410,10 +410,6 @@ module.exports = {
 
 			// Check given level name
 			const { cache } = require('../../index.js');
-			if (!(await cache.levels.findOne({where: {name: [interaction.options.getString('levelname')]}}))) return await interaction.editReply(':x: Couldn\'t submit the record: the given level name is not on the list (please be sure to select one of the available options)');
-
-			// Check given username
-			if (!(await cache.users.findOne({where: {name: [interaction.options.getString('username')]}}))) return await interaction.editReply(':x: Couldn\'t submit the record: this user does not exist. If it\'s your first time submitting a record, use /record createuser to create a new one. Otherwise, please be sure to select your username from the available options');
 			
 			// Create accept/deny buttons
 			const accept = new ButtonBuilder()

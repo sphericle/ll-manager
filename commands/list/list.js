@@ -146,26 +146,7 @@ module.exports = {
 			const password = (interaction.options.getString('password') == null ? 'No Copy' : interaction.options.getString('password'));
 			const rawCreators = interaction.options.getString('creators');
 			const creatorNames = rawCreators ? rawCreators.split(',') : [];
-
-			const uploader = await cache.users.findOne({ 
-				where: Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('name')), {
-					[Op.like]: uploaderName.toLowerCase()
-				})
-			});
-			if (!uploader) {
-				return await interaction.editReply(`:x: Uploader "${uploaderName}" not found.`);
-			}
-			const uploaderId = uploader.user_id;
-
-			const verifier = await cache.users.findOne({ 
-				where: Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('name')), {
-					[Op.like]: verifierName.toLowerCase()
-				})
-			});
-			if (!verifier) {
-				return await interaction.editReply(`:x: Verifier "${verifierName}" not found.`);
-			}
-			const verifierId = verifier.user_id;
+			
 
 			const creatorIds = [];
 			for (const creatorName of creatorNames) {
@@ -174,13 +155,10 @@ module.exports = {
 						[Op.like]: creatorName.trim().toLowerCase()
 					})
 				});
-				if (!creator) {
-					return await interaction.editReply(`:x: Creator "${creatorName}" not found.`);
-				}
 				creatorIds.push(Number(creator.user_id));
 			}
 
-			const githubCode = `{\n\t"id": ${id},\n\t"name": "${levelname}",\n\t"author": ${uploaderId},\n\t"creators": ${JSON.stringify(creatorIds)},\n\t"verifier": ${verifierId},\n\t"verification": "${verification}",\n\t"percentToQualify": 100,\n\t"password": "${password}",\n\t"records" : []\n}`;
+			const githubCode = `{\n\t"id": ${id},\n\t"name": "${levelname}",\n\t"author": "${uploaderName}",\n\t"creators": ${JSON.stringify(creatorIds)},\n\t"verifier": "${verifierName}",\n\t"verification": "${verification}",\n\t"percentToQualify": 100,\n\t"password": "${password}",\n\t"records" : []\n}`;
 
 			const levelBelow = await cache.levels.findOne({ where: { position: position } });
 			const levelAbove = await cache.levels.findOne({ where: { position: position - 1 } });

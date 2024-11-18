@@ -28,13 +28,10 @@ module.exports = {
 
 		const { cache } = require('../index.js');
 
-		// Get cached user
-		const user = await cache.users.findOne({ where: { name: record.username } });
-		if (!user) return await interaction.editReply(':x: Couldn\'t find the user this record was submitted for (their name might have changed since they submitted it)');
 		// Create embed to send with github code
 		const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${record.completionlink}",\n\t\t"percent": 100,\n\t\t"hz": 360` + (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
-		
-		const level = await cache.levels.findOne({ where: {name: record.levelname}});
+
+		const level = await cache.levels.findOne({ where: { name: record.levelname } });
 		try {
 			await db.recordsToCommit.create({
 				filename: level.filename,
@@ -111,8 +108,8 @@ module.exports = {
 
 		staffGuild.channels.cache.get(acceptedRecordsID).send({ content: `${interaction.user}`, embeds: [acceptEmbed], components: [row] });
 		staffGuild.channels.cache.get(archiveRecordsID).send({ embeds: [archiveEmbed] });
-		guild.channels.cache.get(recordsID).send({ content : `<@${record.submitter}>`, embeds: [publicEmbed] });
-		guild.channels.cache.get(recordsID).send({ content : `${record.completionlink}` });
+		guild.channels.cache.get(recordsID).send({ content: `<@${record.submitter}>`, embeds: [publicEmbed] });
+		guild.channels.cache.get(recordsID).send({ content: `${record.completionlink}` });
 
 		// Check if we need to send in dms as well
 		const settings = await db.staffSettings.findOne({ where: { moderator: interaction.user.id } });
