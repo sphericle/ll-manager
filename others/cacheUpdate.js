@@ -23,8 +23,8 @@ module.exports = {
 			}
 
 			try {
-				// await createUser('_', users);
-				logger.info('Scheduled - ' + `Successfully added ${users.length} users.`);
+				await createUser('_', users);
+				logger.info('Scheduled - ' + `Added ${users.length} users.`);
 			} catch (error) {
 				logger.error('Scheduled - ' + `Couldn't add users, something went wrong with sequelize: ${error}`);
 			}
