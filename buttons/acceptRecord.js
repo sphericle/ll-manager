@@ -34,7 +34,7 @@ module.exports = {
 		if (!user) return await interaction.editReply(':x: Couldn\'t find the user this record was submitted for (their name might have changed since they submitted it)');
 
 		// Create embed to send with github code
-		const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${record.completionlink}",\n\t\t"percent": ${record.percent},\n\t\t"enjoyment": ${record.enjoyment},\n\t\t"hz": ${record.fps}` + (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
+		const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${record.completionlink}",\n\t\t"percent": ${record.percent},\n\t\t"enjoyment": ${record.enjoyment},\n\t\t"hz": ${record.fps}` + (record.enjoyment !== -1 ? `,\n\t\t"enjoyment": ${record.enjoyment}` : '') +  (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
 
 		const level = await cache.levels.findOne({ where: { name: record.levelname } });
 		try {
