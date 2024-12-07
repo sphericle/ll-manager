@@ -28,8 +28,12 @@ module.exports = {
 
 		const { cache } = require('../index.js');
 
+		// Get cached user
+		const user = await cache.users.findOne({ where: { name: record.username } });
+		if (!user) return await interaction.editReply(':x: Couldn\'t find the user this record was submitted for (their name might have changed since they submitted it)');
+
 		// Create embed to send with github code
-		const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${record.completionlink}",\n\t\t"percent": 100,\n\t\t"hz": 360` + (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
+		const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${record.completionlink}",\n\t\t"percent": ${record.percent},\n\t\t"enjoyment": ${record.enjoyment},\n\t\t"fps": ${record.fps}` + (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
 
 		const level = await cache.levels.findOne({ where: { name: record.levelname } });
 		try {

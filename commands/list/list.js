@@ -21,6 +21,10 @@ module.exports = {
 						.setDescription('The position to place the level at')
 						.setRequired(true))
 				.addIntegerOption(option =>
+					option.setName('difficulty')
+						.setDescription('The minimum percent players need to get a record on this level')
+						.setRequired(true))
+				.addIntegerOption(option =>
 					option.setName('id')
 						.setDescription('The GD ID of the level to place')
 						.setRequired(true))
@@ -41,7 +45,11 @@ module.exports = {
 						.setDescription('The list of the creators of the level, each separated by a comma'))
 				.addStringOption(option =>
 					option.setName('password')
-						.setDescription('The GD password of the level to place')))
+						.setDescription('The GD password of the level to place'))
+				.addIntegerOption(option =>
+					option.setName('percent')
+						.setDescription('The minimum percent players need to get a record on this level (list percent)')))
+						
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('move')
@@ -143,22 +151,19 @@ module.exports = {
 			const uploaderName = interaction.options.getString('uploader');
 			const verifierName = interaction.options.getString('verifier');
 			const verification = interaction.options.getString('verification');
-			const password = (interaction.options.getString('password') == null ? 'No Copy' : interaction.options.getString('password'));
+			const password = (interaction.options.getString('password') == null ? 'Free to copy' : interaction.options.getString('password'));
 			const rawCreators = interaction.options.getString('creators');
 			const creatorNames = rawCreators ? rawCreators.split(',') : [];
+			const percent = interaction.options.getInteger('percent') || 100;
+			const difficulty = interaction.options.getInteger('difficulty');
 			
 
-			const creatorIds = [];
+			const finalCreators = [];
 			for (const creatorName of creatorNames) {
-				const creator = await cache.users.findOne({ 
-					where: Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('name')), {
-						[Op.like]: creatorName.trim().toLowerCase()
-					})
-				});
-				creatorIds.push(Number(creator.user_id));
+				finalCreators.push(creatorName.trim()); // lol
 			}
 
-			const githubCode = `{\n\t"id": ${id},\n\t"name": "${levelname}",\n\t"author": "${uploaderName}",\n\t"creators": ${JSON.stringify(creatorIds)},\n\t"verifier": "${verifierName}",\n\t"verification": "${verification}",\n\t"percentToQualify": 100,\n\t"password": "${password}",\n\t"records" : []\n}`;
+			const githubCode = `{\n\t"id": ${id},\n\t"name": "${levelname}",\n\t"author": "${uploaderName}",\n\t"creators": ${JSON.stringify(finalCreators)},\n\t"verifier": "${verifierName}",\n\t"verification": "${verification}",\n\t"percentToQualify": ${percent},\n\t"password": "${password}",\n\t"difficulty": ${difficulty},\n\t"records" : []\n}`;
 
 			const levelBelow = await cache.levels.findOne({ where: { position: position } });
 			const levelAbove = await cache.levels.findOne({ where: { position: position - 1 } });
@@ -173,6 +178,8 @@ module.exports = {
 					{ name: 'Verifier:', value: `${verifierName}`, inline: true },
 					{ name: 'Verification:', value: `${verification}`, inline: true },
 					{ name: 'Password:', value: `${password}`, inline: true },
+					{ name: 'Percent:', value: `${percent}`, inline: true },
+					{ name: 'Difficulty:', value: `${difficulty}`, inline: true },
 				)
 				.setTimestamp();
 			// Create commit buttons

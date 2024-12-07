@@ -32,14 +32,13 @@ async function createUser(interaction, user) {
 		const idDigits = 10;
 		const idLower = Math.pow(10, idDigits - 1);
 		const idUpper = Math.pow(10, idDigits) - 1;
-		logger.info(typeof names)
 
 		for (const singleUser of user) {
 			// Check if user already exists
 			const existingUser = await cache.users.findOne({
 				where: Sequelize.where(
 					Sequelize.fn('LOWER', Sequelize.col('name')),
-					singleUser.toLowerCase()
+					singleUser
 				)
 			});
 			const addedUser = Object.values(names).includes(singleUser);
@@ -54,7 +53,6 @@ async function createUser(interaction, user) {
 			}
 			names[userId] = singleUser;
 		}
-
 		const changes = [
 			{
 				path: githubDataPath + '/_name_map.json',
@@ -319,6 +317,17 @@ module.exports = {
 						.setDescription('Name of the mod menu you used, if any (Megahack, Eclipse, GDH, QOLMod, etc..), or None/Vanilla')
 						.setMaxLength(1024)
 						.setRequired(true))
+				.addIntegerOption(option =>
+					option.setName('fps')
+						.setDescription('The FPS you used to complete the level')
+						.setRequired(true))
+				.addIntegerOption(option =>
+					option.setName('percent')
+						.setDescription('The percent you got on the level')
+						.setRequired(true))
+				.addIntegerOption(option =>
+					option.setName('enjoyment')
+						.setDescription('Your enjoyment rating on this level (1-10)'))
 				.addStringOption(option =>
 					option.setName('raw')
 						.setDescription('Link to your raw footage (Optional, required for top 400 levels)')
@@ -435,9 +444,12 @@ module.exports = {
 				.addFields(
 					{ name: 'Record submitted by', value: `<@${interaction.user.id}>` },
 					{ name: 'Record holder', value: `${interaction.options.getString('username')}` },
+					{ name: 'FPS', value: `${interaction.options.getInteger('fps')}` },
+					{ name: 'Percent', value: `${interaction.options.getInteger('percent')}` },
 					{ name: 'Device', value: `${interaction.options.getString('device')}`, inline: true },
 					{ name: 'LDM', value: `${(interaction.options.getInteger('ldm') == null ? 'None' : interaction.options.getInteger('ldm'))}`, inline: true },
 					{ name: 'Completion link', value: `${interaction.options.getString('completionlink')}` },
+					{ name: 'Enjoyment', value: `${(interaction.options.getInteger('enjoyment') == null ? 'None' : interaction.options.getInteger('enjoyment'))}` },
 					{ name: 'Mod menu', value: `${interaction.options.getString('modmenu')}` },
 					{ name: 'Raw link', value: `${(interaction.options.getString('raw') == null ? 'None' : interaction.options.getString('raw'))}` },
 					{ name: 'Additional Info', value: `${(interaction.options.getString('additionalnotes') == null ? 'None' : interaction.options.getString('additionalnotes'))}` },
@@ -457,6 +469,9 @@ module.exports = {
 					levelname: interaction.options.getString('levelname'),
 					device: interaction.options.getString('device'),
 					completionlink: interaction.options.getString('completionlink'),
+					fps: interaction.options.getInteger('fps'),
+					percent: interaction.options.getInteger('percent'),
+					enjoyment: -1,
 					raw: 'None',
 					ldm: 0,
 					additionalnotes: 'None',
@@ -476,6 +491,7 @@ module.exports = {
 			// Check for and add optionnal values to db
 			if (interaction.options.getString('raw') != null) await db.pendingRecords.update({ raw: interaction.options.getString('raw') }, { where: { discordid: sentvideo.id } });
 			if (interaction.options.getInteger('ldm') != null) await db.pendingRecords.update({ ldm: interaction.options.getInteger('ldm') }, { where: { discordid: sentvideo.id } });
+			if (interaction.options.getInteger('enjoyment') != null) await db.pendingRecords.update({ enjoyment: interaction.options.getInteger('enjoyment') }, { where: { discordid: sentvideo.id } });
 			if (interaction.options.getString('additionalnotes') != null) await db.pendingRecords.update({ additionalnotes: interaction.options.getString('additionalnotes') }, { where: { discordid: sentvideo.id } });
 
 			if (!(await db.dailyStats.findOne({ where: { date: Date.now() } }))) db.dailyStats.create({ date: Date.now(), nbRecordsSubmitted: 1, nbRecordsPending: await db.pendingRecords.count() });
@@ -627,6 +643,28 @@ module.exports = {
 			return await interaction.editReply({ embeds: [infoEmbed] });
 		} else if (interaction.options.getSubcommand() === 'createuser') {
 			createUser(interaction, "");
+		} else if (interaction.options.getSubcommand() === 'updateusers') {
+			const { cache } = require('../../index.js');
+			const users = await parseUsers();
+			if (users.length > 0) {
+				logger.info('Parsing users...');
+				await cache.users.destroy({ where: {} });
+				try {
+					await cache.users.bulkCreate(users);
+					logger.info(`Successfully updated ${users.length} cached users.`);
+				} catch (error) {
+					logger.error(`Couldn't update cached users, something went wrong with sequelize: ${error}`);
+				}
+
+				try {
+					await createUser('_', users);
+					interaction.editReply(`Added ${users.length} users.`);
+				} catch (error) {
+					logger.error(`Couldn't add users, something went wrong with sequelize: ${error}`);
+				}
+			} else {
+				interaction.editReply("No users to update.");
+			}
 		}
 	},
 };

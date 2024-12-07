@@ -1,5 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const { guildId, staffGuildId, enableSeparateStaffServer, pendingRecordsID, priorityRecordsID, enablePriorityRole } = require('../../config.json');
+const { parseUsers } = require('../../others/gitUtils.js');
+const { createUser } = require('./records');
 const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
 const Sequelize = require('sequelize');
 const logger = require('log4js').getLogger();
@@ -35,7 +37,11 @@ module.exports = {
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('check')
-				.setDescription('Checks for errored record data')),
+				.setDescription('Checks for errored record data'))
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('updateusers')
+				.setDescription('Syncs all the users in the list with the cache')),
 	async execute(interaction) {
 
 		const { db } = require('../../index.js');
@@ -192,6 +198,28 @@ module.exports = {
 			return await interaction.editReply(`:white_check_mark: ${nbFound} records missing from the pending channel were found, and removed from the database.`);
 
 
-		}
+		} else if (interaction.options.getSubcommand() === 'updateusers') {
+			const { cache } = require('../../index.js');
+			const users = await parseUsers();
+			if (users.length > 0) {
+				logger.info('Parsing users...');
+				await cache.users.destroy({ where: {} });
+				try {
+					await cache.users.bulkCreate(users);
+					logger.info(`Successfully updated ${users.length} cached users.`);
+				} catch (error) {
+					logger.error(`Couldn't update cached users, something went wrong with sequelize: ${error}`);
+				}
+
+				try {
+					await createUser('_', users);
+					interaction.editReply(`Added ${users.length} users.`);
+				} catch (error) {
+					logger.error(`Couldn't add users, something went wrong with sequelize: ${error}`);
+				}
+			} else {
+				interaction.editReply("No users to update.");
+			}
+		} 
 	},
 };
