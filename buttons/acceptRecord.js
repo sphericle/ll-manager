@@ -1,8 +1,9 @@
 const { EmbedBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { ActionRowBuilder } = require('discord.js');
 const logger = require('log4js').getLogger();
-const { archiveRecordsID, acceptedRecordsID, recordsID, enableSeparateStaffServer, guildId, staffGuildId } = require('../config.json');
+const { archiveRecordsID, acceptedRecordsID, recordsID, enableSeparateStaffServer, guildId, staffGuildId, githubOwner, githubRepo, githubDataPath, githubBranch } = require('../config.json');
 const { db } = require('../index.js');
+const { octokit } = require('../index.js');
 
 module.exports = {
 	customId: 'accept',
@@ -33,7 +34,7 @@ module.exports = {
 		if (!user) return await interaction.editReply(':x: Couldn\'t find the user this record was submitted for (their name might have changed since they submitted it)');
 
 		// Create embed to send with github code
-		const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${record.completionlink}",\n\t\t"percent": ${record.percent},\n\t\t"enjoyment": ${record.enjoyment},\n\t\t"fps": ${record.fps}` + (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
+		const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${record.completionlink}",\n\t\t"percent": ${record.percent},\n\t\t"enjoyment": ${record.enjoyment},\n\t\t"hz": ${record.fps}` + (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
 
 		const level = await cache.levels.findOne({ where: { name: record.levelname } });
 		try {
@@ -165,6 +166,9 @@ module.exports = {
 				submitter: record.submitter,
 				levelname: record.levelname,
 				device: record.device,
+				fps: record.fps,
+				enjoyment: record.enjoyment,
+				percent: record.percent,
 				completionlink: record.completionlink,
 				raw: record.raw,
 				ldm: record.ldm,
@@ -182,8 +186,203 @@ module.exports = {
 		else await db.dailyStats.update({ nbRecordsAccepted: (await db.dailyStats.findOne({ where: { date: Date.now() } })).nbRecordsAccepted + 1 }, { where: { date: Date.now() } });
 
 		logger.info(`${interaction.user.tag} (${interaction.user.id}) accepted record of ${record.levelname} for ${record.username} submitted by ${record.submitter}`);
-		// Reply
-		return await interaction.editReply(':white_check_mark: The record has been accepted');
+		
+		const filename = level.filename;
+		logger.info(`Filename: ${filename}.json`);
+		let fileResponse;
+		try {
+			fileResponse = await octokit.rest.repos.getContent({
+				owner: githubOwner,
+				repo: githubRepo,
+				path: githubDataPath + `/${filename}.json`,
+				branch: githubBranch,
+			});
+		} catch (fetchError) {
+			logger.info(`Couldn't fetch ${filename}.json: \n${fetchError}`);
+			return await interaction.editReply(`:x: Couldn't fetch ${filename}.json: \n${fetchError}`);
+		}
 
+		let parsedData;
+		try {
+			parsedData = JSON.parse(Buffer.from(fileResponse.data.content, 'base64').toString('utf-8'));
+		} catch (parseError) {
+			logger.info(`Unable to parse data fetched from ${filename}:\n${parseError}`);
+			return await interaction.editReply(`:x: Unable to parse data fetched from ${filename}:\n${parseError}`);
+		}
+		if (!Array.isArray(parsedData.records)) {
+			logger.info(`The records field of the fetched ${filename}.json is not an array`);
+			return await interaction.editReply(`:x: The records field of the fetched ${filename}.json is not an array`);
+		}
+
+		// If duplicate, don't add it to githubCodes
+		if (await parsedData.records.some(fileRecord => fileRecord.user == record.username)) {
+			if (fileRecord.percent < record.percent) {
+				logger.info('This record has a greater percent on this level, updating...')
+				fileRecord.percent = record.percent;
+				fileRecord.enjoyment = record.enjoyment;
+				fileRecord.link = record.completionlink;
+			} else {
+				logger.info(`Canceled adding duplicated record of ${filename} for ${record.username}`);
+				await db.recordsToCommit.destroy({ where: { id: record.dataValues['id'] } });
+				return await interaction.editReply(`:x: This user already has a record on this level!`);
+			}
+		}
+
+		const newRecord = JSON.parse(githubCode)
+		parsedData.records = parsedData.records.concat(newRecord)
+
+		let changes = [];
+
+		changes.push({
+			path: githubDataPath + `/${filename}.json`,
+			content: JSON.stringify(parsedData, null, '\t'),
+		})
+
+		const changePath = githubDataPath + `/${filename}.json`
+		const content = JSON.stringify(parsedData);
+
+		const debugStatus = await db.infos.findOne({ where: { name: 'commitdebug' } });
+		if (!debugStatus || !debugStatus.status) {
+			let commitSha;
+			try {
+				// Get the SHA of the latest commit from the branch
+				const { data: refData } = await octokit.git.getRef({
+					owner: githubOwner,
+					repo: githubRepo,
+					ref: `heads/${githubBranch}`,
+				});
+				commitSha = refData.object.sha;
+			} catch (getRefError) {
+				logger.info(`Something went wrong while fetching the latest commit SHA:\n${getRefError}`);
+				await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
+				return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (getRefError)');
+			}
+			let treeSha;
+			try {
+				// Get the commit using its SHA
+				const { data: commitData } = await octokit.git.getCommit({
+					owner: githubOwner,
+					repo: githubRepo,
+					commit_sha: commitSha,
+				});
+				treeSha = commitData.tree.sha;
+			} catch (getCommitError) {
+				logger.info(`Something went wrong while fetching the latest commit:\n${getCommitError}`);
+				await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
+				return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (getCommitError)');
+			}
+
+			let newTree;
+			try {
+				// Create a new tree with the changes
+				newTree = await octokit.git.createTree({
+					owner: githubOwner,
+					repo: githubRepo,
+					base_tree: treeSha,
+					tree: changes.map(change => ({
+						path: change.path,
+						mode: '100644',
+						type: 'blob',
+						content: change.content,
+					})),
+				});
+			} catch (createTreeError) {
+				logger.info(`Something went wrong while creating a new tree:\n${createTreeError}`);
+				await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
+				return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (createTreeError)');
+			}
+
+			let newCommit;
+			try {
+				// Create a new commit with this tree
+				newCommit = await octokit.git.createCommit({
+					owner: githubOwner,
+					repo: githubRepo,
+					message: `Added ${record.username}'s record to ${record.levelname} (${interaction.user.tag})`,
+					tree: newTree.data.sha,
+					parents: [commitSha],
+				});
+			} catch (createCommitError) {
+				logger.info(`Something went wrong while creating a new commit:\n${createCommitError}`);
+				await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
+				return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (createCommitError)');
+			}
+
+			try {
+				// Update the branch to point to the new commit
+				await octokit.git.updateRef({
+					owner: githubOwner,
+					repo: githubRepo,
+					ref: `heads/${githubBranch}`,
+					sha: newCommit.data.sha,
+				});
+			} catch (updateRefError) {
+				logger.info(`Something went wrong while updating the branch :\n${updateRefError}`);
+				await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
+				return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (updateRefError)');
+			}
+			logger.info(`Successfully created commit on ${githubBranch} (record addition): ${newCommit.data.sha}`);
+			try {
+				await db.recordsToCommit.destroy({ where: { discordid: interaction.message.id } });
+				await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
+				await interaction.message.delete();
+			} catch (cleanupError) {
+				logger.info(`Something went wrong while cleaning up the commit database & discord message:\n${cleanupError}`);
+			}
+			return await interaction.editReply({ content: ' ', embeds: [replyEmbed] });
+		} else {
+			let updatedFiles = 0;
+			let i = 1;
+			// Get file SHA
+			let fileSha;
+			try {
+				const response = await octokit.repos.getContent({
+					owner: githubOwner,
+					repo: githubRepo,
+					path: changePath,
+				});
+				fileSha = response.data.sha;
+			} catch (error) {
+				logger.info(`Error fetching ${changePath} SHA:\n${error}`);
+				erroredRecords.push(`All from ${changePath}`);
+				return await interaction.editReply(`:x: Couldn't fetch data from ${changePath}`);
+				i++;
+				
+			}
+
+			try {
+				await octokit.repos.createOrUpdateFileContents({
+					owner: githubOwner,
+					repo: githubRepo,
+					path: changePath,
+					message: `Updated ${changePath} (${interaction.user.tag})`,
+					content: Buffer.from(content).toString('base64'),
+					sha: fileSha,
+				});
+				logger.info(`Updated ${changePath} (${interaction.user.tag}`);
+			} catch (error) {
+				logger.info(`Failed to update ${changePath} (${interaction.user.tag}):\n${error}`);
+				erroredRecords.push(`All from ${changePath}`);
+				await interaction.editReply(`:x: Couldn't update the file ${changePath}, skipping...`);
+			}
+			updatedFiles++;
+			i++;
+
+			let detailedErrors = '';
+			for (const err of erroredRecords) detailedErrors += `\n${err}`;
+
+			const replyEmbed = new EmbedBuilder()
+				.setColor(0x8fce00)
+				.setTitle(':white_check_mark: Commit successful')
+				.setDescription(`Successfully updated ${updatedFiles}/ files`)
+				.addFields(
+					{ name: 'Duplicates found:', value: `**${duplicateRecords}**`, inline: true },
+					{ name: 'Errors:', value: `${erroredRecords.length}`, inline: true },
+					{ name: 'Detailed Errors:', value: (detailedErrors.length == 0 ? 'None' : detailedErrors) },
+				)
+				.setTimestamp();
+			await interaction.message.delete();
+			return await interaction.editReply(':white_check_mark: The record has been accepted');
+		}
 	},
 };
