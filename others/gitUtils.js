@@ -40,7 +40,6 @@ module.exports = {
 
 		let i = 1;
 		for (const filename of list_data) {
-			if (filename.startsWith('_')) continue; // for dividers LOL its too easy
 			let parsedData;
 			try {
 				parsedData = JSON.parse(fs.readFileSync(path.join(localRepoPath, `data/${filename}.json`), 'utf8'));
