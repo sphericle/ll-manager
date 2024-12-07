@@ -188,7 +188,6 @@ module.exports = {
 		logger.info(`${interaction.user.tag} (${interaction.user.id}) accepted record of ${record.levelname} for ${record.username} submitted by ${record.submitter}`);
 		
 		const filename = level.filename;
-		logger.info(`Filename: ${filename}.json`);
 		let fileResponse;
 		try {
 			fileResponse = await octokit.rest.repos.getContent({
