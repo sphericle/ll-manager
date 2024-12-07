@@ -7,6 +7,6 @@ module.exports = {
 		.setDescription('Todo list for the bot')
 		.setDefaultMemberPermissions(0),
 	async execute(interaction) {
-		await interaction.reply({content: 'Todo: \n- Auto commit records when accepted'});
+		await interaction.reply({content: 'Todo: \n- Add commit button to record accept message'});
 	},
 };
