@@ -160,8 +160,9 @@ module.exports = {
 			}	
 		}
 
-		logger.info(`Existing: ${existing}`)
-		logger.info(`Updated: ${updated}`)
+		// DEBUG
+		existing = false;
+		updated = false;
 
 		// if the record does not already exist or existed but has been updated
 		if (existing === false || updated === true) {
@@ -266,7 +267,7 @@ module.exports = {
 				} catch (cleanupError) {
 					logger.info(`Something went wrong while cleaning up the commit database & discord message:\n${cleanupError}`);
 				}
-				return await interaction.editReply("This record has been accepted and committed!");
+				await interaction.editReply("This record has been accepted and committed!");
 			} else {
 				let updatedFiles = 0;
 				let i = 1;
@@ -326,7 +327,7 @@ module.exports = {
 			const guild = await interaction.client.guilds.fetch(guildId);
 			const staffGuild = (enableSeparateStaffServer ? await interaction.client.guilds.fetch(staffGuildId) : guild);
 
-			staffGuild.channels.cache.get(acceptedRecordsID).send({ content: `${interaction.user}`, embeds: [acceptEmbed], components: [row] });
+			staffGuild.channels.cache.get(acceptedRecordsID).send({ content: '', embeds: [acceptEmbed], components: [row] });
 			staffGuild.channels.cache.get(archiveRecordsID).send({ embeds: [archiveEmbed] });
 			guild.channels.cache.get(recordsID).send({ content: `<@${record.submitter}>`, embeds: [publicEmbed] });
 			guild.channels.cache.get(recordsID).send({ content: `${record.completionlink}` });
@@ -401,7 +402,6 @@ module.exports = {
 			else await db.dailyStats.update({ nbRecordsAccepted: (await db.dailyStats.findOne({ where: { date: Date.now() } })).nbRecordsAccepted + 1 }, { where: { date: Date.now() } });
 			return;
 		} else {
-			logger.info(`Record exists`);
 			return await interaction.editReply(`:x: This user already has a record on this level!`);
 		}
 	},
