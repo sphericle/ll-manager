@@ -41,6 +41,13 @@ module.exports = {
 						.setDescription('The link to the level\'s verification video')
 						.setRequired(true))
 				.addStringOption(option =>
+					option.setName('songname')
+						.setDescription('The name of this level\'s song')
+						.setRequired(true))
+				.addStringOption(option =>
+					option.setName('songlink')
+						.setDescription('The NONG link for this level, if any.'))
+				.addStringOption(option =>
 					option.setName('creators')
 						.setDescription('The list of the creators of the level, each separated by a comma'))
 				.addStringOption(option =>
@@ -64,43 +71,6 @@ module.exports = {
 					option.setName('position')
 						.setDescription('The new position to move the level at')
 						.setMinValue(1)
-						.setRequired(true)))
-		.addSubcommand(subcommand =>
-			subcommand
-				.setName('tolegacy')
-				.setDescription('Moves a level to the top of the legacy list')
-				.addStringOption(option =>
-					option.setName('levelname')
-						.setDescription('The name of the level to move')
-						.setAutocomplete(true)
-						.setMinLength(1)
-						.setRequired(true)))
-		.addSubcommand(subcommand =>
-			subcommand
-				.setName('fromlegacy')
-				.setDescription('Moves a level from the legacy list to the main list')
-				.addStringOption(option =>
-					option.setName('levelname')
-						.setDescription('The name of the level to move')
-						.setAutocomplete(true)
-						.setMinLength(1)
-						.setRequired(true))
-				.addIntegerOption(option =>
-					option.setName('position')
-						.setDescription('The position to place the level at')
-						.setRequired(true)))
-		.addSubcommand(subcommand =>
-			subcommand
-				.setName('renameuser')
-				.setDescription('Renames a user')
-				.addStringOption(option =>
-					option.setName('user')
-						.setDescription('The name of the user to rename')
-						.setRequired(true)
-						.setAutocomplete(true))
-				.addStringOption(option =>
-					option.setName('newname')
-						.setDescription('The new name of the user')
 						.setRequired(true)))
 		.addSubcommand(subcommand =>
 			subcommand
@@ -143,7 +113,7 @@ module.exports = {
 		if (interaction.options.getSubcommand() === 'place') {
 
 			const { db, cache } = require('../../index.js');
-			const { Op, Sequelize } = require('sequelize');
+			const { Op } = require('sequelize');
 
 			const levelname = interaction.options.getString('levelname');
 			const position = interaction.options.getInteger('position');
@@ -156,6 +126,8 @@ module.exports = {
 			const creatorNames = rawCreators ? rawCreators.split(',') : [];
 			const percent = interaction.options.getInteger('percent') || 100;
 			const difficulty = interaction.options.getInteger('difficulty');
+			const songName = interaction.options.getString('songname');
+			const songLink = interaction.options.getString('songlink') || null;
 			
 
 			const finalCreators = [];
@@ -163,7 +135,7 @@ module.exports = {
 				finalCreators.push(creatorName.trim()); // lol
 			}
 
-			const githubCode = `{\n\t"id": ${id},\n\t"name": "${levelname}",\n\t"author": "${uploaderName}",\n\t"creators": ${JSON.stringify(finalCreators)},\n\t"verifier": "${verifierName}",\n\t"verification": "${verification}",\n\t"percentToQualify": ${percent},\n\t"password": "${password}",\n\t"difficulty": ${difficulty},\n\t"records" : []\n}`;
+			const githubCode = `{\n\t"id": ${id},\n\t"name": "${levelname}",\n\t"author": "${uploaderName}",\n\t"creators": ${JSON.stringify(finalCreators)},\n\t"verifier": "${verifierName}",\n\t"verification": "${verification}",\n\t"percentToQualify": ${percent},\n\t"password": "${password}",\n\t"difficulty": ${difficulty},\n\t"song": "${songName}",` + (songLink !== null ? `\n\t"songLink": "${songLink}",` : '') + `\n\t"records" : []\n}`;
 
 			const levelBelow = await cache.levels.findOne({ where: { position: position } });
 			const levelAbove = await cache.levels.findOne({ where: { position: position - 1 } });
