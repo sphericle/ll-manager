@@ -75,6 +75,22 @@ module.exports = {
 						.setMaxLength(1024)))
 		.addSubcommand(subcommand =>
 			subcommand
+				.setName('addlast')
+				.setDescription('Adds the last accepted record to a different level')
+				.addStringOption(option =>
+					option.setName('levelname')
+						.setDescription('Name of the level you\'re submitting for (Be sure to select one of the available options.)')
+						.setMaxLength(1024)
+						.setRequired(true)
+						.setAutocomplete(true))
+				.addIntegerOption(option =>
+					option.setName('enjoyment')
+						.setDescription('Your enjoyment rating on this level (1-10). If this is left out, the previous enjoyment rating will be used.'))
+				.addIntegerOption(option =>
+					option.setName('fps')
+						.setDescription('The FPS you used to complete the level. If this is left out, the previous FPS will be used.')))
+		.addSubcommand(subcommand =>
+			subcommand
 				.setName('modleaderboard')
 				.setDescription('Shows list staff records leaderboard'))
 		.addSubcommand(subcommand =>
@@ -553,6 +569,24 @@ module.exports = {
 			logger.info(`${interaction.user.tag} (${interaction.user.id}) submitted ${interaction.options.getString('levelname')} for ${interaction.options.getString('username')}`);
 			// Reply
 			await interaction.editReply((enablePriorityRole && interaction.member.roles.cache.has(priorityRoleID) ? `:white_check_mark: The priority record for ${interaction.options.getString('levelname')} has been submitted successfully` : `:white_check_mark: The record for ${interaction.options.getString('levelname')} has been added successfully`));
+
+		} else if (interaction.options.getSubcommand() === 'addlast') {
+			
+			await interaction.deferReply({ ephemeral: true });
+
+			// get last row from accepted records db
+
+			const lastRow = await db.acceptedRecords.findOne({ order: [['createdAt', 'DESC']] });
+
+			if (!lastRow) {
+				return await interaction.editReply(':x: There are no records to add');
+			}
+
+			// add record to list
+
+			const { cache } = require('../../index.js');
+
+			return await interaction.editReply(`This command is not done yet!`);
 
 		}  else if (interaction.options.getSubcommand() === 'stats') {
 
