@@ -158,7 +158,7 @@ module.exports = {
 			}	
 		}
 
-		if (updated) logger.log('This record has been updated, overwriting...')
+		if (updated === true) logger.log('This record has been updated, overwriting...')
 
 		// if the record does not already exist or existed but has been updated
 		if (existing === false || updated === true) {
