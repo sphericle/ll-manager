@@ -85,10 +85,10 @@ module.exports = {
 						.setAutocomplete(true))
 				.addIntegerOption(option =>
 					option.setName('enjoyment')
-						.setDescription('Your enjoyment rating on this level (1-10). If this is left out, the previous enjoyment rating will be used.'))
+						.setDescription('The enjoyment rating on this level (1-10)'))
 				.addIntegerOption(option =>
 					option.setName('fps')
-						.setDescription('The FPS you used to complete the level. If this is left out, the previous FPS will be used.')))
+						.setDescription('The FPS used to complete the level')))
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('modleaderboard')
