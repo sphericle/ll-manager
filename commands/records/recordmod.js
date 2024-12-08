@@ -88,7 +88,26 @@ module.exports = {
 						.setDescription('The enjoyment rating on this level (1-10)'))
 				.addIntegerOption(option =>
 					option.setName('fps')
-						.setDescription('The FPS used to complete the level')))
+						.setDescription('The FPS used to complete the level'))
+				.addIntegerOption(option =>
+					option.setName('percent')
+						.setDescription('The percent you got on the level'))
+				.addStringOption(option =>
+					option.setName('completionlink')
+						.setDescription('Link to the completion')
+						.setMaxLength(1024))
+				.addStringOption(option =>
+					option.setName('raw')
+						.setDescription('Link to your raw footage (Optional, required for extremes and above)')
+						.setMaxLength(1024))
+				.addStringOption(option =>
+					option.setName('additionalnotes')
+						.setDescription('Any other info you\'d like to share with us (Optional)')
+						.setMaxLength(1024))
+				.addStringOption(option =>
+					option.setName('modmenu')
+						.setDescription('Name of the mod menu you used, if any (Megahack, Eclipse, GDH, QOLMod, etc..), or None/Vanilla')
+						.setMaxLength(1024)))
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('modleaderboard')
@@ -582,11 +601,54 @@ module.exports = {
 				return await interaction.editReply(':x: There are no records to add');
 			}
 
+			const oldRecord = lastRow.dataValues;
+
+			const newLevel = interaction.options.getString('levelname');
+			const newPercent = interaction.options.getInteger('percent') ? interaction.options.getInteger('percent') : null;
+			const newEnjoyment = interaction.options.getString('enjoyment') ? interaction.options.getString('enjoyment') : null;
+			const newFPS = interaction.options.getString('fps') ? interaction.options.getString('fps') : null;
+			const newDevice = interaction.options.getString('device');
+			const newRaw = interaction.options.getString('raw') ? interaction.options.getString('raw') : null;
+			// const newNotes = interaction.options.getString('notes') ? interaction.options.getString('notes') : null;
+			const newModMenu = interaction.options.getString('modmenu') ? interaction.options.getString('modmenu') : null;
+
+
+			let newNotes;
+
+			if (interaction.options.getString('notes')) {
+				if (interaction.options.getString('notes').toLowerCase() === 'none') {
+					newNotes = null;
+				}
+				newNotes = interaction.options.getString('notes');
+			}
+			if (newLevel === oldRecord.levelname) {
+				return await interaction.editReply(':x: Choose a different level! That\'s the point of the command lmao????');
+			}
+
+			/* 
+			await db.acceptedRecords.create({
+				username: oldRecord.username,
+				submitter: interaction.user.id, // always equal to moderator
+				levelname: newLevel,
+				device: newDevice ? newDevice : oldRecord.device,
+				completionlink: oldRecord.completionlink,
+				enjoyment: newEnjoyment ? newEnjoyment : oldRecord.enjoyment,
+				fps: newFPS ? newFPS : oldRecord.fps,
+				percent: newPercent ? newPercent : oldRecord.percent,
+				raw: newRaw ? newRaw : oldRecord.raw,
+				ldm: oldRecord.ldm, // always 0
+				additionalnotes: newNotes ? newNotes : oldRecord.additionalnotes,
+				priority: oldRecord.priority, // always false
+				modMenu: newModMenu ? newModMenu : oldRecord.modMenu,
+				moderator: interaction.user.id, // always equal to submitter
+			});
+			*/
+
 			// add record to list
 
 			const { cache } = require('../../index.js');
 
-			return await interaction.editReply(`This command is not done yet!`);
+			return await interaction.editReply({ content: `This command is not done yet!`, ephemeral: true });
 
 		}  else if (interaction.options.getSubcommand() === 'stats') {
 
