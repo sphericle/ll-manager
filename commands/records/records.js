@@ -422,7 +422,7 @@ module.exports = {
 
 			// Check enjoyment bounds (1-10)
 			const enjoyment = interaction.options.getInteger('enjoyment');
-			if (enjoyment < 1 || enjoyment > 10) return await interaction.editReply(':x: Couldn\'t submit the record: Enjoyment rating must be between 1 and 10');
+			if (enjoyment && (enjoyment < 1 || enjoyment > 10)) return await interaction.editReply(':x: Couldn\'t submit the record: Enjoyment rating must be between 1 and 10');
 
 			// Check percent bounds (0-100)
 			const percent = interaction.options.getInteger('percent');

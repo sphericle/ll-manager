@@ -107,84 +107,6 @@ module.exports = {
 				{ name: 'Device', value: `${record.device}`, inline: true },
 			);
 
-		// Send all messages simultaneously
-		const guild = await interaction.client.guilds.fetch(guildId);
-		const staffGuild = (enableSeparateStaffServer ? await interaction.client.guilds.fetch(staffGuildId) : guild);
-
-		staffGuild.channels.cache.get(acceptedRecordsID).send({ content: `${interaction.user}`, embeds: [acceptEmbed], components: [row] });
-		staffGuild.channels.cache.get(archiveRecordsID).send({ embeds: [archiveEmbed] });
-		guild.channels.cache.get(recordsID).send({ content: `<@${record.submitter}>`, embeds: [publicEmbed] });
-		guild.channels.cache.get(recordsID).send({ content: `${record.completionlink}` });
-
-		// Check if we need to send in dms as well
-		const settings = await db.staffSettings.findOne({ where: { moderator: interaction.user.id } });
-		if (!settings) {
-			await db.staffSettings.create({
-				moderator: interaction.user.id,
-				sendAcceptedInDM: false,
-			});
-		} else if (settings.sendAcceptedInDM) {
-			try {
-				const rawGithubCode = JSON.stringify({
-					user: record.username,
-					link: record.completionlink,
-					percent: 100,
-					hz: 360,
-					...(record.device === 'Mobile' && { mobile: true }),
-				}, null, '\t');
-
-				const dmMessage = `Accepted record of ${record.levelname} for ${record.username}\nGithub Code:`;
-				const dmMessage2 = `${rawGithubCode}`;
-				await interaction.user.send({ content: dmMessage });
-				await interaction.user.send({ content: dmMessage2 });
-			} catch (_) {
-				logger.info(`Failed to send in moderator ${interaction.user.id} dms, ignoring send in dms setting`);
-			}
-		}
-
-		// Update moderator data (create new entry if that moderator hasn't accepted/denied records before)
-		const modInfo = await db.staffStats.findOne({ where: { moderator: interaction.user.id } });
-		if (!modInfo) {
-			await db.staffStats.create({
-				moderator: interaction.user.id,
-				nbRecords: 1,
-				nbDenied: 0,
-				nbAccepted: 1,
-			});
-		} else {
-			await modInfo.increment('nbRecords');
-			await modInfo.increment('nbAccepted');
-		}
-
-
-		// Remove record from pending table
-		await db.pendingRecords.destroy({ where: { discordid: record.discordid } });
-		// Add record to accepted table
-		try {
-			await db.acceptedRecords.create({
-				username: record.username,
-				submitter: record.submitter,
-				levelname: record.levelname,
-				device: record.device,
-				fps: record.fps,
-				enjoyment: record.enjoyment,
-				percent: record.percent,
-				completionlink: record.completionlink,
-				raw: record.raw,
-				ldm: record.ldm,
-				modMenu: record.modMenu,
-				additionalnotes: record.additionalnotes,
-				priority: record.priority,
-				moderator: interaction.user.id,
-			});
-		} catch (error) {
-			logger.info(`Couldn't add the accepted record ; something went wrong with Sequelize : ${error}`);
-			return await interaction.editReply(':x: Something went wrong while adding the accepted record to the database');
-		}
-
-		if (!(await db.dailyStats.findOne({ where: { date: Date.now() } }))) db.dailyStats.create({ date: Date.now(), nbRecordsAccepted: 1, nbRecordsPending: await db.pendingRecords.count() });
-		else await db.dailyStats.update({ nbRecordsAccepted: (await db.dailyStats.findOne({ where: { date: Date.now() } })).nbRecordsAccepted + 1 }, { where: { date: Date.now() } });
-
 		logger.info(`${interaction.user.tag} (${interaction.user.id}) accepted record of ${record.levelname} for ${record.username} submitted by ${record.submitter}`);
 		
 		const filename = level.filename;
@@ -213,175 +135,274 @@ module.exports = {
 			return await interaction.editReply(`:x: The records field of the fetched ${filename}.json is not an array`);
 		}
 
+		const newRecord = JSON.parse(githubCode)
+
+		// {fileRecord} is the record we're looping through, and
+		// {record} is the current record we're trying to commit
+		
+		let existing = false;
+		let updated = false;
 		// If duplicate, don't add it to githubCodes
-		if (await parsedData.records.some(fileRecord => fileRecord.user == record.username)) {
-			if (fileRecord.percent < record.percent) {
-				logger.info('This record has a greater percent on this level, updating...')
-				fileRecord.percent = record.percent;
-				fileRecord.enjoyment = record.enjoyment;
-				fileRecord.link = record.completionlink;
-			} else {
-				logger.info(`Canceled adding duplicated record of ${filename} for ${record.username}`);
-				await db.recordsToCommit.destroy({ where: { id: record.dataValues['id'] } });
-				return await interaction.editReply(`:x: This user already has a record on this level!`);
-			}
+		for (const fileRecord of parsedData.records) {
+			if (fileRecord.user === record.username) {
+				logger.info(`Found existing record of ${filename} for ${record.username}`);
+				if (fileRecord.percent < record.percent) {
+					logger.info('This record has a greater percent on this level, updating...')
+					fileRecord.percent = record.percent;
+					fileRecord.enjoyment = record.enjoyment;
+					fileRecord.link = record.completionlink;
+					updated = true;
+				} else {
+					logger.info(`Canceled adding duplicated record of ${filename} for ${record.username}`);
+					await db.recordsToCommit.destroy({ where: { id: record.dataValues['id'] } });
+					existing = true;
+				}
+			}	
 		}
 
-		const newRecord = JSON.parse(githubCode)
-		parsedData.records = parsedData.records.concat(newRecord)
+		logger.info(`Existing: ${existing}`)
+		logger.info(`Updated: ${updated}`)
 
-		let changes = [];
+		// if the record does not already exist or existed but has been updated
+		if (existing === false || updated === true) {
+			// Add new record to the level's file if this is a new record (not an updated one)
+			if (updated === false) parsedData.records = parsedData.records.concat(newRecord)
 
-		changes.push({
-			path: githubDataPath + `/${filename}.json`,
-			content: JSON.stringify(parsedData, null, '\t'),
-		})
+			// not sure why it needs to be done this way but :shrug:
+			let changes = [];
+			changes.push({
+				path: githubDataPath + `/${filename}.json`,
+				content: JSON.stringify(parsedData, null, '\t'),
+			})
 
-		const changePath = githubDataPath + `/${filename}.json`
-		const content = JSON.stringify(parsedData);
+			const changePath = githubDataPath + `/${filename}.json`
+			const content = JSON.stringify(parsedData);
 
-		const debugStatus = await db.infos.findOne({ where: { name: 'commitdebug' } });
-		if (!debugStatus || !debugStatus.status) {
-			let commitSha;
-			try {
-				// Get the SHA of the latest commit from the branch
-				const { data: refData } = await octokit.git.getRef({
-					owner: githubOwner,
-					repo: githubRepo,
-					ref: `heads/${githubBranch}`,
-				});
-				commitSha = refData.object.sha;
-			} catch (getRefError) {
-				logger.info(`Something went wrong while fetching the latest commit SHA:\n${getRefError}`);
-				await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
-				return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (getRefError)');
-			}
-			let treeSha;
-			try {
-				// Get the commit using its SHA
-				const { data: commitData } = await octokit.git.getCommit({
-					owner: githubOwner,
-					repo: githubRepo,
-					commit_sha: commitSha,
-				});
-				treeSha = commitData.tree.sha;
-			} catch (getCommitError) {
-				logger.info(`Something went wrong while fetching the latest commit:\n${getCommitError}`);
-				await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
-				return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (getCommitError)');
-			}
+			const debugStatus = await db.infos.findOne({ where: { name: 'commitdebug' } });
+			if (!debugStatus || !debugStatus.status) {
+				let commitSha;
+				try {
+					// Get the SHA of the latest commit from the branch
+					const { data: refData } = await octokit.git.getRef({
+						owner: githubOwner,
+						repo: githubRepo,
+						ref: `heads/${githubBranch}`,
+					});
+					commitSha = refData.object.sha;
+				} catch (getRefError) {
+					logger.info(`Something went wrong while fetching the latest commit SHA:\n${getRefError}`);
+					await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
+					return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (getRefError)');
+				}
+				let treeSha;
+				try {
+					// Get the commit using its SHA
+					const { data: commitData } = await octokit.git.getCommit({
+						owner: githubOwner,
+						repo: githubRepo,
+						commit_sha: commitSha,
+					});
+					treeSha = commitData.tree.sha;
+				} catch (getCommitError) {
+					logger.info(`Something went wrong while fetching the latest commit:\n${getCommitError}`);
+					await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
+					return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (getCommitError)');
+				}
 
-			let newTree;
-			try {
-				// Create a new tree with the changes
-				newTree = await octokit.git.createTree({
-					owner: githubOwner,
-					repo: githubRepo,
-					base_tree: treeSha,
-					tree: changes.map(change => ({
-						path: change.path,
-						mode: '100644',
-						type: 'blob',
-						content: change.content,
-					})),
-				});
-			} catch (createTreeError) {
-				logger.info(`Something went wrong while creating a new tree:\n${createTreeError}`);
-				await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
-				return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (createTreeError)');
-			}
+				let newTree;
+				try {
+					// Create a new tree with the changes
+					newTree = await octokit.git.createTree({
+						owner: githubOwner,
+						repo: githubRepo,
+						base_tree: treeSha,
+						tree: changes.map(change => ({
+							path: change.path,
+							mode: '100644',
+							type: 'blob',
+							content: change.content,
+						})),
+					});
+				} catch (createTreeError) {
+					logger.info(`Something went wrong while creating a new tree:\n${createTreeError}`);
+					await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
+					return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (createTreeError)');
+				}
 
-			let newCommit;
-			try {
-				// Create a new commit with this tree
-				newCommit = await octokit.git.createCommit({
-					owner: githubOwner,
-					repo: githubRepo,
-					message: `Added ${record.username}'s record to ${record.levelname} (${interaction.user.tag})`,
-					tree: newTree.data.sha,
-					parents: [commitSha],
-				});
-			} catch (createCommitError) {
-				logger.info(`Something went wrong while creating a new commit:\n${createCommitError}`);
-				await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
-				return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (createCommitError)');
-			}
+				let newCommit;
+				try {
+					// Create a new commit with this tree
+					newCommit = await octokit.git.createCommit({
+						owner: githubOwner,
+						repo: githubRepo,
+						message: `Added ${record.username}'s record to ${record.levelname} (${interaction.user.tag})`,
+						tree: newTree.data.sha,
+						parents: [commitSha],
+					});
+				} catch (createCommitError) {
+					logger.info(`Something went wrong while creating a new commit:\n${createCommitError}`);
+					await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
+					return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (createCommitError)');
+				}
 
-			try {
-				// Update the branch to point to the new commit
-				await octokit.git.updateRef({
-					owner: githubOwner,
-					repo: githubRepo,
-					ref: `heads/${githubBranch}`,
-					sha: newCommit.data.sha,
-				});
-			} catch (updateRefError) {
-				logger.info(`Something went wrong while updating the branch :\n${updateRefError}`);
-				await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
-				return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (updateRefError)');
-			}
-			logger.info(`Successfully created commit on ${githubBranch} (record addition): ${newCommit.data.sha}`);
-			try {
-				await db.recordsToCommit.destroy({ where: { discordid: interaction.message.id } });
-				await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
-				await interaction.message.delete();
-			} catch (cleanupError) {
-				logger.info(`Something went wrong while cleaning up the commit database & discord message:\n${cleanupError}`);
-			}
-			return await interaction.editReply({ content: ' ', embeds: [replyEmbed] });
-		} else {
-			let updatedFiles = 0;
-			let i = 1;
-			// Get file SHA
-			let fileSha;
-			try {
-				const response = await octokit.repos.getContent({
-					owner: githubOwner,
-					repo: githubRepo,
-					path: changePath,
-				});
-				fileSha = response.data.sha;
-			} catch (error) {
-				logger.info(`Error fetching ${changePath} SHA:\n${error}`);
-				erroredRecords.push(`All from ${changePath}`);
-				return await interaction.editReply(`:x: Couldn't fetch data from ${changePath}`);
+				try {
+					// Update the branch to point to the new commit
+					await octokit.git.updateRef({
+						owner: githubOwner,
+						repo: githubRepo,
+						ref: `heads/${githubBranch}`,
+						sha: newCommit.data.sha,
+					});
+				} catch (updateRefError) {
+					logger.info(`Something went wrong while updating the branch :\n${updateRefError}`);
+					await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
+					return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (updateRefError)');
+				}
+				logger.info(`Successfully created commit on ${githubBranch} (record addition): ${newCommit.data.sha}`);
+				try {
+					await db.recordsToCommit.destroy({ where: { discordid: interaction.message.id } });
+					await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
+					await interaction.message.delete();
+				} catch (cleanupError) {
+					logger.info(`Something went wrong while cleaning up the commit database & discord message:\n${cleanupError}`);
+				}
+				return await interaction.editReply("This record has been accepted and committed!");
+			} else {
+				let updatedFiles = 0;
+				let i = 1;
+				// Get file SHA
+				let fileSha;
+				try {
+					const response = await octokit.repos.getContent({
+						owner: githubOwner,
+						repo: githubRepo,
+						path: changePath,
+					});
+					fileSha = response.data.sha;
+				} catch (error) {
+					logger.info(`Error fetching ${changePath} SHA:\n${error}`);
+					erroredRecords.push(`All from ${changePath}`);
+					return await interaction.editReply(`:x: Couldn't fetch data from ${changePath}`);
+					i++;
+					
+				}
+
+				try {
+					await octokit.repos.createOrUpdateFileContents({
+						owner: githubOwner,
+						repo: githubRepo,
+						path: changePath,
+						message: `Updated ${changePath} (${interaction.user.tag})`,
+						content: Buffer.from(content).toString('base64'),
+						sha: fileSha,
+					});
+					logger.info(`Updated ${changePath} (${interaction.user.tag}`);
+				} catch (error) {
+					logger.info(`Failed to update ${changePath} (${interaction.user.tag}):\n${error}`);
+					erroredRecords.push(`All from ${changePath}`);
+					await interaction.editReply(`:x: Couldn't update the file ${changePath}, skipping...`);
+				}
+				updatedFiles++;
 				i++;
-				
+
+				let detailedErrors = '';
+				for (const err of erroredRecords) detailedErrors += `\n${err}`;
+
+				const replyEmbed = new EmbedBuilder()
+					.setColor(0x8fce00)
+					.setTitle(':white_check_mark: Commit successful')
+					.setDescription(`Successfully updated ${updatedFiles}/ files`)
+					.addFields(
+						{ name: 'Duplicates found:', value: `**${duplicateRecords}**`, inline: true },
+						{ name: 'Errors:', value: `${erroredRecords.length}`, inline: true },
+						{ name: 'Detailed Errors:', value: (detailedErrors.length == 0 ? 'None' : detailedErrors) },
+					)
+					.setTimestamp();
+				await interaction.message.delete();
+				await interaction.editReply(':white_check_mark: The record has been accepted');
 			}
 
-			try {
-				await octokit.repos.createOrUpdateFileContents({
-					owner: githubOwner,
-					repo: githubRepo,
-					path: changePath,
-					message: `Updated ${changePath} (${interaction.user.tag})`,
-					content: Buffer.from(content).toString('base64'),
-					sha: fileSha,
+			// Send all messages simultaneously
+			const guild = await interaction.client.guilds.fetch(guildId);
+			const staffGuild = (enableSeparateStaffServer ? await interaction.client.guilds.fetch(staffGuildId) : guild);
+
+			staffGuild.channels.cache.get(acceptedRecordsID).send({ content: `${interaction.user}`, embeds: [acceptEmbed], components: [row] });
+			staffGuild.channels.cache.get(archiveRecordsID).send({ embeds: [archiveEmbed] });
+			guild.channels.cache.get(recordsID).send({ content: `<@${record.submitter}>`, embeds: [publicEmbed] });
+			guild.channels.cache.get(recordsID).send({ content: `${record.completionlink}` });
+
+			// Check if we need to send in dms as well
+			const settings = await db.staffSettings.findOne({ where: { moderator: interaction.user.id } });
+			if (!settings) {
+				await db.staffSettings.create({
+					moderator: interaction.user.id,
+					sendAcceptedInDM: false,
 				});
-				logger.info(`Updated ${changePath} (${interaction.user.tag}`);
-			} catch (error) {
-				logger.info(`Failed to update ${changePath} (${interaction.user.tag}):\n${error}`);
-				erroredRecords.push(`All from ${changePath}`);
-				await interaction.editReply(`:x: Couldn't update the file ${changePath}, skipping...`);
+			} else if (settings.sendAcceptedInDM) {
+				try {
+					const rawGithubCode = JSON.stringify({
+						user: record.username,
+						link: record.completionlink,
+						percent: 100,
+						hz: 360,
+						...(record.device === 'Mobile' && { mobile: true }),
+					}, null, '\t');
+
+					const dmMessage = `Accepted record of ${record.levelname} for ${record.username}\nGithub Code:`;
+					const dmMessage2 = `${rawGithubCode}`;
+					await interaction.user.send({ content: dmMessage });
+					await interaction.user.send({ content: dmMessage2 });
+				} catch (_) {
+					logger.info(`Failed to send in moderator ${interaction.user.id} dms, ignoring send in dms setting`);
+				}
 			}
-			updatedFiles++;
-			i++;
 
-			let detailedErrors = '';
-			for (const err of erroredRecords) detailedErrors += `\n${err}`;
+			// Update moderator data (create new entry if that moderator hasn't accepted/denied records before)
+			const modInfo = await db.staffStats.findOne({ where: { moderator: interaction.user.id } });
+			if (!modInfo) {
+				await db.staffStats.create({
+					moderator: interaction.user.id,
+					nbRecords: 1,
+					nbDenied: 0,
+					nbAccepted: 1,
+				});
+			} else {
+				await modInfo.increment('nbRecords');
+				await modInfo.increment('nbAccepted');
+			}
 
-			const replyEmbed = new EmbedBuilder()
-				.setColor(0x8fce00)
-				.setTitle(':white_check_mark: Commit successful')
-				.setDescription(`Successfully updated ${updatedFiles}/ files`)
-				.addFields(
-					{ name: 'Duplicates found:', value: `**${duplicateRecords}**`, inline: true },
-					{ name: 'Errors:', value: `${erroredRecords.length}`, inline: true },
-					{ name: 'Detailed Errors:', value: (detailedErrors.length == 0 ? 'None' : detailedErrors) },
-				)
-				.setTimestamp();
-			await interaction.message.delete();
-			return await interaction.editReply(':white_check_mark: The record has been accepted');
+
+			// Remove record from pending table
+			await db.pendingRecords.destroy({ where: { discordid: record.discordid } });
+			// Add record to accepted table
+			try {
+				await db.acceptedRecords.create({
+					username: record.username,
+					submitter: record.submitter,
+					levelname: record.levelname,
+					device: record.device,
+					fps: record.fps,
+					enjoyment: record.enjoyment,
+					percent: record.percent,
+					completionlink: record.completionlink,
+					raw: record.raw,
+					ldm: record.ldm,
+					modMenu: record.modMenu,
+					additionalnotes: record.additionalnotes,
+					priority: record.priority,
+					moderator: interaction.user.id,
+				});
+			} catch (error) {
+				logger.info(`Couldn't add the accepted record ; something went wrong with Sequelize : ${error}`);
+				return await interaction.editReply(':x: Something went wrong while adding the accepted record to the database');
+			}
+
+			if (!(await db.dailyStats.findOne({ where: { date: Date.now() } }))) db.dailyStats.create({ date: Date.now(), nbRecordsAccepted: 1, nbRecordsPending: await db.pendingRecords.count() });
+			else await db.dailyStats.update({ nbRecordsAccepted: (await db.dailyStats.findOne({ where: { date: Date.now() } })).nbRecordsAccepted + 1 }, { where: { date: Date.now() } });
+			return;
+		} else {
+			logger.info(`Record exists`);
+			return await interaction.editReply(`:x: This user already has a record on this level!`);
 		}
 	},
 };
