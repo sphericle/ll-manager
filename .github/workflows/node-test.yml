@@ -1,15 +1,13 @@
-name: CI
 on: 
-    push:
-    workflow_dispatch:
-
+  push:
+  workflow_dispatch:
+name: Node Code Formatter
 jobs:
-  build:
+  lint:
+    name: Node Code Formatter
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 18
-    - run: npm i
-    - run: npm ci
+    - name: Node Code Formatter
+      uses: MarvinJWendt/run-node-formatter@stable
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
