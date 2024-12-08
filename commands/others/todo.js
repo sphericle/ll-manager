@@ -16,6 +16,7 @@ module.exports = {
 
 const text = "Red Green Yellow 2-0";
 const match = text.match(/(\d+)-\d+$/);
+const match2 = text.match(/\d+-(\d+)$/)
 if (match) {
 				console.log(match);
     console.log(match[1]); // 2
