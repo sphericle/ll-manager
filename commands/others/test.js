@@ -2,7 +2,7 @@ const { SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
 	cooldown: 5,
-	enabled: true,
+	enabled: false,
 	data: new SlashCommandBuilder()
 		.setName('test')
 		.setDescription('Test')
