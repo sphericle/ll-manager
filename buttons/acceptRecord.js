@@ -106,8 +106,6 @@ module.exports = {
 				{ name: 'Record holder', value: `${record.username}`, inline: true },
 				{ name: 'Device', value: `${record.device}`, inline: true },
 			);
-
-		logger.info(`${interaction.user.tag} (${interaction.user.id}) accepted record of ${record.levelname} for ${record.username} submitted by ${record.submitter}`);
 		
 		const filename = level.filename;
 		let fileResponse;
@@ -160,9 +158,7 @@ module.exports = {
 			}	
 		}
 
-		// DEBUG
-		existing = false;
-		updated = false;
+		if (updated) logger.log('This record has been updated, overwriting...')
 
 		// if the record does not already exist or existed but has been updated
 		if (existing === false || updated === true) {
@@ -263,7 +259,6 @@ module.exports = {
 				try {
 					await db.recordsToCommit.destroy({ where: { discordid: interaction.message.id } });
 					await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
-					await interaction.message.delete();
 				} catch (cleanupError) {
 					logger.info(`Something went wrong while cleaning up the commit database & discord message:\n${cleanupError}`);
 				}
@@ -393,6 +388,7 @@ module.exports = {
 					priority: record.priority,
 					moderator: interaction.user.id,
 				});
+				logger.info(`${interaction.user.tag} (${interaction.user.id}) accepted record of ${record.levelname} for ${record.username} submitted by ${record.submitter}`);
 			} catch (error) {
 				logger.info(`Couldn't add the accepted record ; something went wrong with Sequelize : ${error}`);
 				return await interaction.editReply(':x: Something went wrong while adding the accepted record to the database');
