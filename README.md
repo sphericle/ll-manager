@@ -1,6 +1,8 @@
-# archived
+# Layout List Manager
 
+## This is a fork of the [All Rated Extreme Demons List](https://aredl.net)'s bot, who has given us permission to host this.
 
+## Original Readme:
 This repository hosts the code for the discord bot made to help record submissions for the [All Rated Extreme Demons List](https://aredl.net)It is used to allow users to submit their records through discord, and to automatically add those records to a github repository that uses the [TSL List Template](https://github.com/TheShittyList/GDListTemplate)
 
 ## Setup
