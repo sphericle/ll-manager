@@ -16,6 +16,62 @@ module.exports = {
 				.setDescription('Shows how many records you\'ve checked'))
 		.addSubcommand(subcommand =>
 			subcommand
+				.setName('add')
+				.setDescription('Add a record directly to the site without submitting it')
+				.addStringOption(option =>
+					option.setName('username')
+						.setDescription('The username you\'re submitting for (Be sure to select one of the available options.)')
+						.setMaxLength(1024)
+						.setAutocomplete(true)
+						.setRequired(true))
+				.addStringOption(option =>
+					option.setName('levelname')
+						.setDescription('Name of the level you\'re submitting for (Be sure to select one of the available options.)')
+						.setMaxLength(1024)
+						.setRequired(true)
+						.setAutocomplete(true))
+				.addStringOption(option =>
+					option.setName('device')
+						.setDescription('Device the level was completed on')
+						.setRequired(true)
+						.addChoices(
+							{ name: 'PC', value: 'PC' },
+							{ name: 'Mobile', value: 'Mobile' },
+						))
+				.addStringOption(option =>
+					option.setName('completionlink')
+						.setDescription('Link to the completion')
+						.setMaxLength(1024)
+						.setRequired(true))
+				.addStringOption(option =>
+					option.setName('modmenu')
+						.setDescription('Name of the mod menu you used, if any (Megahack, Eclipse, GDH, QOLMod, etc..), or None/Vanilla')
+						.setMaxLength(1024)
+						.setRequired(true))
+				.addIntegerOption(option =>
+					option.setName('fps')
+						.setDescription('The FPS you used to complete the level')
+						.setRequired(true))
+				.addIntegerOption(option =>
+					option.setName('percent')
+						.setDescription('The percent you got on the level')
+						.setRequired(true))
+				.addIntegerOption(option =>
+					option.setName('enjoyment')
+						.setDescription('Your enjoyment rating on this level (1-10)'))
+				.addStringOption(option =>
+					option.setName('raw')
+						.setDescription('Link to your raw footage (Optional, required for top 400 levels)')
+						.setMaxLength(1024))
+				.addIntegerOption(option =>
+					option.setName('ldm')
+						.setDescription('ID for the external LDM you used (Optional)'))
+				.addStringOption(option =>
+					option.setName('additionalnotes')
+						.setDescription('Any other info you\'d like to share with us (Optional)')
+						.setMaxLength(1024)))
+		.addSubcommand(subcommand =>
+			subcommand
 				.setName('modleaderboard')
 				.setDescription('Shows list staff records leaderboard'))
 		.addSubcommand(subcommand =>
@@ -75,10 +131,44 @@ module.exports = {
 							{ name: 'Enabled', value: 'enabled' },
 							{ name: 'Disabled', value: 'disabled' },
 					))),
+	async autocomplete(interaction) {
+		const focused = interaction.options.getFocused(true);
+
+		const { cache } = require('../../index.js');
+		const Sequelize = require('sequelize');
+
+		if (focused.name === 'levelname') {
+			let levels = await cache.levels.findAll({
+				where: {
+					name: Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('name')), 'LIKE', '%' + focused.value.toLowerCase() + '%')
+				}
+			});
+
+			await interaction.respond(
+				levels.slice(0, 25).map(level => ({ name: level.name, value: level.name })),
+			);
+		} else if (focused.name === 'username') {
+			let users = await cache.users.findAll({
+				where: {
+					name: Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('name')), 'LIKE', '%' + focused.value.toLowerCase() + '%')
+				}
+			});
+			await interaction.respond(
+				users.slice(0, 25).map(user => ({ name: user.name, value: user.name })),
+			);
+		}
+	},
 	async execute(interaction) {
 
 		const { db } = require('../../index.js');
-		if (interaction.options.getSubcommand() === 'stats') {
+		if (interaction.options.getSubcommand() === 'add') {
+
+			// add record to list
+
+			await interaction.deferReply({ ephemeral: true });
+			return await interaction.editReply(':x: Coming soon!');
+
+		}  else if (interaction.options.getSubcommand() === 'stats') {
 
 			await interaction.deferReply({ ephemeral: true });
 			// Shows mod stats
