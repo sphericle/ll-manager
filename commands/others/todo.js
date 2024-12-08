@@ -10,3 +10,14 @@ module.exports = {
 		await interaction.reply({content: 'Todo: \n- Add command to copy a record to a different level\n- Command to say yes / no to a level in voting\n- Accept/reject a level'});
 	},
 };
+
+
+/* 
+
+const text = "Red Green Yellow 2-0";
+const match = text.match(/(\d+)-\d+$/);
+if (match) {
+				console.log(match);
+    console.log(match[1]); // 2
+}
+*/
