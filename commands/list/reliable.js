@@ -67,16 +67,13 @@ module.exports = {
             let count = 0; // Initialize the yes count to an integer
             if (matchYes) {
                 try {
-                    logger.log(`Level name: ${matchLevelName[1]}`)
-                    logger.log(`Yes votes: ${matchYes[1]}`)
-                    logger.log(`No votes: ${matchNo[1]}`)
 
                     count = parseInt(matchYes[1]); // Parse the regex output and add 1 vote to it
                     count += 1;
 
                     logger.log(`New yes votes: ${count}`)
 
-                    await interaction.editReply({ content: "Updating thread name...", ephemeral: true });
+                    await interaction.editReply({ content: "Updating thread name, this could take a while...", ephemeral: true });
 
                     Logger.log("updating...")
                     // update the thread name
@@ -107,14 +104,13 @@ module.exports = {
             let count = 0; // Initialize the yes count to an integer
             if (matchNo) {
                 try {
-                    logger.log(`Level name: ${matchLevelName[1]}`)
-                    logger.log(`Yes votes: ${matchYes[1]}`)
-                    logger.log(`No votes: ${matchNo[1]}`)
 
                     count = parseInt(matchNo[1]); // Parse the regex output and add 1 vote to it
                     count += 1;
 
                     logger.log(`New no votes: ${count}`)
+
+                    await interaction.editReply({ content: "Updating thread name, this could take a while...", ephemeral: true });
 
                     // update the thread name
                     await interaction.channel.setName(`${matchLevelName[1]} ${matchYes[1]}-${count}`); // Set the channel name to the same thing but with the added yes
