@@ -28,7 +28,11 @@ module.exports = {
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('exportdb')
-				.setDescription('Exports the records database')),
+				.setDescription('Exports the records database'))
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('exportlog')
+				.setDescription('Exports the bot logs')),
 
 	async execute(interaction) {
 
@@ -270,6 +274,15 @@ module.exports = {
 				logger.error(error);
 				await interaction.editReply({ content: ':x: An error occurred while exporting the database.' });
 			}
+		} else if (interaction.options.getSubcommand() === 'exportlog') {
+			const exportDir = path.join(__dirname, '../../logs/');
+			if (!fs.existsSync(exportDir)) {
+				fs.mkdirSync(exportDir, { recursive: true });
+			}
+			const filePath = path.join(exportDir, `latest.log`);
+
+
+			return await interaction.editReply({ content: 'Bot logs:', files: [filePath] });
 		}
 	},
 };

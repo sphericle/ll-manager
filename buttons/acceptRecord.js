@@ -37,18 +37,6 @@ module.exports = {
 		const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${record.completionlink}",\n\t\t"percent": ${record.percent},\n\t\t"hz": ${record.fps}` + (record.enjoyment !== -1 ? `,\n\t\t"enjoyment": ${record.enjoyment}` : '') +  (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
 
 		const level = await cache.levels.findOne({ where: { name: record.levelname } });
-		try {
-			await db.recordsToCommit.create({
-				filename: level.filename,
-				user: user.name,
-				githubCode: githubCode,
-				discordid: '',
-			});
-		}
-		catch (error) {
-			logger.info(`Couldn't add record to the commit db :\n${error}`);
-			return await interaction.reply(':x: Something went wrong while accepting the record');
-		}
 
 		const acceptEmbed = new EmbedBuilder()
 			.setColor(0x8fce00)
@@ -59,7 +47,7 @@ module.exports = {
 				{ name: 'Github code', value: `\`\`\`json\n${githubCode}\n\`\`\`` },
 			)
 			.setTimestamp()
-			.setFooter({ text: `Added to the commit list (currently ${await db.recordsToCommit.count()} pending accepted records to commit)` });
+			.setFooter({ text: `Added to the commit list` });
 
 		// Create button to remove the message
 		const remove = new ButtonBuilder()
@@ -152,7 +140,6 @@ module.exports = {
 					updated = true;
 				} else {
 					logger.info(`Canceled adding duplicated record of ${filename} for ${record.username}`);
-					await db.recordsToCommit.destroy({ where: { id: record.dataValues['id'] } });
 					existing = true;
 				}
 			}	
@@ -257,7 +244,6 @@ module.exports = {
 				}
 				logger.info(`Successfully created commit on ${githubBranch} (record addition): ${newCommit.data.sha}`);
 				try {
-					await db.recordsToCommit.destroy({ where: { discordid: interaction.message.id } });
 					await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
 				} catch (cleanupError) {
 					logger.info(`Something went wrong while cleaning up the commit database & discord message:\n${cleanupError}`);

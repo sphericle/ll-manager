@@ -127,26 +127,6 @@ module.exports = {
 						)))
 		.addSubcommand(subcommand =>
 			subcommand
-				.setName('commit')
-				.setDescription('Commits all the pending accepted records to github'))
-		.addSubcommand(subcommand =>
-			subcommand
-				.setName('commitdebug')
-				.setDescription('Enables or disables commiting each file individually')
-				.addStringOption(option =>
-					option.setName('status')
-						.setDescription('Enabled or Disabled')
-						.setRequired(true)
-						.addChoices(
-							{ name: 'Enabled', value: 'enabled' },
-							{ name: 'Disabled', value: 'disabled' },
-						)))
-		.addSubcommand(subcommand =>
-			subcommand
-				.setName('commitreset')
-				.setDescription('Removes all records from the list to commit (in case there are errored records)'))
-		.addSubcommand(subcommand =>
-			subcommand
 				.setName('enabledm')
 				.setDescription('Enables sending the github code to you in dms whenever you accept a record')
 				.addStringOption(option =>
@@ -156,19 +136,7 @@ module.exports = {
 						.addChoices(
 							{ name: 'Enabled', value: 'enabled' },
 							{ name: 'Disabled', value: 'disabled' },
-						)))
-		.addSubcommand(subcommand =>
-			subcommand
-				.setName('enablereminder')
-				.setDescription('Enables the shifts reminder')
-				.addStringOption(option =>
-					option.setName('status')
-						.setDescription('Enable or disable this setting')
-						.setRequired(true)
-						.addChoices(
-							{ name: 'Enabled', value: 'enabled' },
-							{ name: 'Disabled', value: 'disabled' },
-					))),
+						))),
 	async autocomplete(interaction) {
 		const focused = interaction.options.getFocused(true);
 
