@@ -23,21 +23,7 @@ module.exports = {
 		} else {
 			logger.error('Scheduled - ' + 'Canceled updating levels cachee: no levels found.');
 		}
-
-		logger.info('Scheduled - ' + 'Parsing legacy levels...');
-		const legacy_levels = await parseLevels(true);
 		
-		if (legacy_levels.length > 0) {
-			await cache.legacy.destroy({ where: {}});
-			try {
-				await cache.legacy.bulkCreate(legacy_levels);
-				logger.info('Scheduled - ' + `Successfully updated ${legacy_levels.length} cached legacy levels.`);
-			} catch (error) {
-				logger.error('Scheduled - ' + `Couldn't udate cached legacy levels, something went wrong with sequelize: ${error}`);
-			}
-		} else {
-			logger.error('Scheduled - ' + 'Canceled updating legacy levels cachee: no levels found.');
-		}
 		logger.info('Scheduled - ' + 'Successfully updated cached levels.');
 		
 	},
