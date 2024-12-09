@@ -612,7 +612,7 @@ module.exports = {
 			const newNotes = interaction.options.getString('notes') || oldRecord.notes;
 			const newModMenu = interaction.options.getString('modmenu') || oldRecord.modmenu;
 
-			const setNoneToNull = (val) => (val === 'none' ? null : val);
+			const setNoneToNull = (val) => (val.toLowerCase() === 'none' ? null : val);
 
 			newEnjoyment = setNoneToNull(newEnjoyment);
 			newRaw = setNoneToNull(newRaw);
