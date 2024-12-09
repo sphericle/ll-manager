@@ -18,16 +18,42 @@ module.exports = {
         .addSubcommand(subcommand =>
             subcommand
                 .setName('accept')
-                .setDescription('Accept a level'))
+                .setDescription('Accept a level')
+                .addStringOption(option =>
+                    option.setName('user')
+                        .setDescription('The user to ping when accepting the level')
+                        .setAutocomplete(true)))
         .addSubcommand(subcommand =>
             subcommand
                 .setName('reject')
-                .setDescription('Reject a level')),
+                .setDescription('Reject a level')
+                .addStringOption(option =>
+                    option.setName('reason')
+                        .setDescription('The reason for rejecting the level')
+                        .setRequired(true))
+                .addStringOption(option =>
+                    option.setName('user')
+                        .setDescription('The user to ping when rejecting the level')
+                        .setAutocomplete(true))),
+    async autocomplete(interaction) {
+        const focusedOption = interaction.options.getFocused();
+        const members = interaction.guild.members.cache;
+        const filtered = members.filter(member => member.user.username.toLowerCase().includes(focusedOption.toLowerCase())).map(member => {
+            return {
+                name: member.user.username,
+                value: member.id,
+            };
+        });
+        await interaction.respond(
+            filtered.map(user => {
+                return { name: user.name, value: user.value };
+            }),
+        );
+    },
     async execute(interaction) {
         await interaction.deferReply({ ephemeral: true });
          
         if (interaction.options.getSubcommand() === 'yes') {
-            
             // if the current channel is not a thread
             if (!interaction.channel.isThread()) {
                 return await interaction.editReply('You must be in a thread to use this command');
@@ -102,19 +128,10 @@ module.exports = {
 
             return await interaction.editReply('The thread has been updated!');
 
-        } else if (interaction.options.getSubcommand() === 'accept') {
+        } else if (interaction.options.getSubcommand() === 'accept' || interaction.options.getSubcommand() === 'reject') {
             const guild = await interaction.client.guilds.fetch(guildId);
-            const userSelect = new UserSelectMenuBuilder()
-                .setCustomId('users')
-                .setPlaceholder('Select multiple users.')
-                .setMinValues(1)
-                .setMaxValues(1);
 
-            const row1 = new ActionRowBuilder()
-                .addComponents(userSelect);
-
-            
-
+            const command = interaction.options.getSubcommand()
             const submissionsChannel = guild.channels.cache.get(`${submissionResultsID}`)
 
             // if the current channel is not a thread
@@ -125,20 +142,36 @@ module.exports = {
             // get the thread name
             const text = interaction.channel.name;
             const matchLevelName = text.match(/^(.*)\s\d+-\d+$/);
+            if (!matchLevelName) {
+                return await interaction.editReply('This thread name is not formatted correctly! (Level name #-#)');
+            }
             const levelName = matchLevelName[1];
+            const userToPing = interaction.options.getString('user');
 
-            await interaction.editReply({
-                content: 'Select user to ping:',
-                components: [row1],
-            }).then(async (interaction) => {
-                const selectedUser = await interaction.guild.members.cache.get(interaction.values[0]);
-                logger.log(selectedUser)
-                const channel = guild.channels.cache.get(`${submissionResultsID}`)
-                await channel.send({ content: `\n\n${levelName} has been accepted!` })
-                await interaction.deleteReply();
-                await interaction.channel.send({ content: `<@${selectedUser.id}>` })
-                return;
+            const embed = new EmbedBuilder()
+                .setTitle(command === 'accept' ? `Accepted: ${levelName}` : `Rejected: ${levelName}`)
+                .setColor(command === 'accept' ? 0x00ff00 : 0xff0000)
+                .setTimestamp()
+            
+            if (command === 'reject') embed.setDescription(`Reason: ${interaction.options.getString('reason')}`)
+            await submissionsChannel.send({
+                embeds: [
+                    {
+                        title:  command === 'accept' ? `Accepted: ${levelName}` : `Rejected: ${levelName}`,
+                        color: command === 'accept' ? 0x00ff00 : 0xff0000
+                    }
+                ],
+                content: interaction.options.getString('user') ? `<@${userToPing}>` : ''
             })
+
+            await interaction.editReply({ content: "Updating thread name...", ephemeral: true });
+            await interaction.channel.setName(`${matchLevelName[1]} (${command === 'accept' ? 'ACCEPTED' : 'REJECTED'})`); // Set the channel name to the same thing but with the added yes
+            await interaction.editReply({
+                content: "The thread has been updated!",
+                ephemeral: true
+            });
+            if (command === 'reject') interaction.channel.setArchived(true);
+            return
         }
     },
 };
