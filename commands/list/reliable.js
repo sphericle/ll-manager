@@ -155,12 +155,7 @@ module.exports = {
             
             if (command === 'reject') embed.setDescription(`Reason: ${interaction.options.getString('reason')}`)
             await submissionsChannel.send({
-                embeds: [
-                    {
-                        title:  command === 'accept' ? `Accepted: ${levelName}` : `Rejected: ${levelName}`,
-                        color: command === 'accept' ? 0x00ff00 : 0xff0000
-                    }
-                ],
+                embeds: [ embed ],
                 content: interaction.options.getString('user') ? `<@${userToPing}>` : ''
             })
 
