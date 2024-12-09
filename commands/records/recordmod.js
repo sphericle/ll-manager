@@ -604,16 +604,24 @@ module.exports = {
 			const oldRecord = lastRow.dataValues;
 
 			const newLevel = interaction.options.getString('levelname');
-			const newPercent = interaction.options.getInteger('percent') ? interaction.options.getInteger('percent') : null;
-			const newEnjoyment = interaction.options.getString('enjoyment') ? interaction.options.getString('enjoyment') : null;
-			const newFPS = interaction.options.getString('fps') ? interaction.options.getString('fps') : null;
-			const newDevice = interaction.options.getString('device');
-			const newRaw = interaction.options.getString('raw') ? interaction.options.getString('raw') : null;
-			// const newNotes = interaction.options.getString('notes') ? interaction.options.getString('notes') : null;
-			const newModMenu = interaction.options.getString('modmenu') ? interaction.options.getString('modmenu') : null;
+			const newPercent = interaction.options.getInteger('percent') || oldRecord.percent;
+			const newEnjoyment = interaction.options.getString('enjoyment') || oldRecord.enjoyment;
+			const newFPS = interaction.options.getString('fps') || oldRecord.fps;
+			const newDevice = interaction.options.getString('device') || oldRecord.device;
+			const newRaw = interaction.options.getString('raw') || oldRecord.raw;
+			const newNotes = interaction.options.getString('notes') || oldRecord.notes;
+			const newModMenu = interaction.options.getString('modmenu') || oldRecord.modmenu;
 
+			const setNoneToNull = (val) => (val === 'none' ? null : val);
 
-			let newNotes;
+			newEnjoyment = setNoneToNull(newEnjoyment);
+			newRaw = setNoneToNull(newRaw);
+			newNotes = setNoneToNull(newNotes);
+			newModMenu = setNoneToNull(newModMenu);
+
+			newPercent = (newPercent === -1 ? null : newPercent);
+			newFPS = (newFPS === -1 ? null : newFPS);
+
 
 			if (interaction.options.getString('notes')) {
 				if (interaction.options.getString('notes').toLowerCase() === 'none') {
@@ -625,24 +633,23 @@ module.exports = {
 				return await interaction.editReply(':x: Choose a different level! That\'s the point of the command lmao????');
 			}
 
-			/* 
+			
 			await db.acceptedRecords.create({
 				username: oldRecord.username,
 				submitter: interaction.user.id, // always equal to moderator
 				levelname: newLevel,
-				device: newDevice ? newDevice : oldRecord.device,
+				device: newDevice,
 				completionlink: oldRecord.completionlink,
-				enjoyment: newEnjoyment ? newEnjoyment : oldRecord.enjoyment,
-				fps: newFPS ? newFPS : oldRecord.fps,
-				percent: newPercent ? newPercent : oldRecord.percent,
-				raw: newRaw ? newRaw : oldRecord.raw,
+				enjoyment: newEnjoyment,
+				fps: newFPS,
+				percent: newPercent,
+				raw: newRaw,
 				ldm: oldRecord.ldm, // always 0
-				additionalnotes: newNotes ? newNotes : oldRecord.additionalnotes,
+				additionalnotes: newNotes,
 				priority: oldRecord.priority, // always false
-				modMenu: newModMenu ? newModMenu : oldRecord.modMenu,
+				modMenu: newModMenu,
 				moderator: interaction.user.id, // always equal to submitter
 			});
-			*/
 
 			// add record to list
 
