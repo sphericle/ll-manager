@@ -1,8 +1,11 @@
 const { REST, Routes } = require('discord.js');
-const { clientId, guildId, staffGuildId, enableSeparateStaffServer, token } = require('./config.json');
+const { clientId, guildId, staffGuildId, enableSeparateStaffServer } = require('./config.json');
 const log4js = require('log4js');
 const fs = require('node:fs');
 const path = require('node:path');
+const dotenv = require('dotenv');
+
+dotenv.config();
 
 // Logger
 log4js.configure('./log4js.json');
@@ -41,7 +44,7 @@ for (const folder of commandFolders) {
 }
 
 // Construct and prepare an instance of the REST module
-const rest = new REST().setToken(token);
+const rest = new REST().setToken(process.env.TOKEN);
 
 // and deploy commands
 (async () => {

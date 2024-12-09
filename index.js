@@ -1,4 +1,3 @@
-const { token, githubToken } = require('./config.json');
 const simpleGit = require('simple-git');
 const log4js = require('log4js');
 const Sequelize = require('sequelize');
@@ -6,6 +5,9 @@ const { Client, GatewayIntentBits } = require('discord.js');
 const { Octokit } = require('@octokit/rest');
 const { createDbSchema, createCacheDbSchema } =  require('./others/dbSchema.js');
 const { clientInit, sequelizeInit, checkGithubPermissions } = require('./startUtils.js');
+const dotenv = require('dotenv');
+
+dotenv.config();
 
 // Logger
 log4js.configure('./log4js.json');
@@ -39,7 +41,7 @@ const sequelize_cache = new Sequelize({
 });
 
 // Establish Github connection
-const octokit = new Octokit({ auth: githubToken });
+const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
 // Git repo setup
 const git = simpleGit();
@@ -69,7 +71,7 @@ async function start() {
 	await checkGithubPermissions(octokit);
 	try {
 		logger.info('Logging in client with discord...');
-		await client.login(token);
+		await client.login(process.env.TOKEN);
 		logger.info(`Client logged in as ${client.user.tag}`);
 	} catch (error) {
 		logger.error('Unable to login client: \n', error);
