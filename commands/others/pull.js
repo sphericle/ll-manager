@@ -4,7 +4,6 @@ module.exports = {
 	enabled: true,
 	data: new SlashCommandBuilder()
 		.setName('pullchanges')
-		.setDefaultMemberPermissions(0)
 		.setDescription('Pull the latest changes from the repository'),
 	async execute(interaction) {
 		await interaction.reply('Pulling the latest changes from the repository...');
