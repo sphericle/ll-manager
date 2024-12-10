@@ -1,7 +1,7 @@
 const simpleGit = require('simple-git');
 const log4js = require('log4js');
 const Sequelize = require('sequelize');
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, ActivityType } = require('discord.js');
 const { Octokit } = require('@octokit/rest');
 const { createDbSchema, createCacheDbSchema } =  require('./others/dbSchema.js');
 const { clientInit, sequelizeInit, checkGithubPermissions } = require('./startUtils.js');
@@ -26,6 +26,8 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildPresences] });
+
+
 
 // Establish DB connection
 const sequelize = new Sequelize({
@@ -77,6 +79,18 @@ async function start() {
 		logger.error('Unable to login client: \n', error);
 		process.exit(1);
 	}
+	try {
+		client.user.setPresence({
+			activities: [{
+				name: 'layouts',
+				type: ActivityType.Playing
+			}],
+			status: 'offline'
+		});
+	} catch (e) {
+		logger.error(`Error setting presence: ${e}`);
+	}
+
 }
 
 start();
