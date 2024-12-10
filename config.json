@@ -10,13 +10,13 @@
 	"scheduleCacheUpdate": "30 * * * *",
 	"scheduleChangelog": "00 22 * * *",
 	
-	"githubOwner": "sphericle",
+	"githubOwner": "layout-list",
 	"githubRepo": "layout-list",
 	"githubDataPath": "data",
 	"githubBranch": "main",
 
 	"clientId": "1315066782213738597",
-	"guildId": "1308195426410954884",
+	"guildId": "855211848362098699",
 	"staffGuildId": "1212116091451609088",
 
 	"priorityRoleID" : "1129273868759089242",
