@@ -46,11 +46,6 @@ module.exports = {
 						.setDescription('Link to the completion')
 						.setMaxLength(1024)
 						.setRequired(true))
-				.addStringOption(option =>
-					option.setName('modmenu')
-						.setDescription('Name of the mod menu you used, if any (Megahack, Eclipse, GDH, QOLMod, etc..), or None/Vanilla')
-						.setMaxLength(1024)
-						.setRequired(true))
 				.addIntegerOption(option =>
 					option.setName('fps')
 						.setDescription('The FPS you used to complete the level')
@@ -221,7 +216,7 @@ module.exports = {
 					completionlink: linkStr,
 					raw: rawStr,
 					ldm: interaction.options.getInteger('ldm'),
-					modMenu: interaction.options.getString('modmenu'),
+					modMenu: "none",
 					additionalnotes: interaction.options.getString('additionalnotes'),
 					priority: enablePriorityRole && interaction.member.roles.cache.has(priorityRoleID),
 					moderator: interaction.user.id,

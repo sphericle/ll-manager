@@ -6,7 +6,7 @@
     {
       "label": "run node",
       "type": "shell",
-      "command": "node ./deploy-commands.js",
+      "command": "node ./bot.js",
       "problemMatcher": [],
       "group": {
         "kind": "build",
