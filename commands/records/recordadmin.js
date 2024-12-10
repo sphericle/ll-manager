@@ -13,7 +13,6 @@ module.exports = {
 		.setName('recordadmin')
 		.setDescription('Staff record administration commands')
 		.setDMPermission(true)
-		.setDefaultMemberPermissions(0)
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('setstatus')
