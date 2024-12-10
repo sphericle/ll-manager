@@ -7,7 +7,6 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName("embed")
 		.setDescription("Bot embed messages management")
-		.setDefaultMemberPermissions(0)
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName("create")
