@@ -6,8 +6,7 @@ module.exports = {
 	enabled: false,
 	data: new SlashCommandBuilder()
 		.setName('updatestats')
-		.setDescription('Update the daily stats from the records database')
-		.setDefaultMemberPermissions(0),
+		.setDescription('Update the daily stats from the records database'),
 	async execute(interaction) {
 
 		await interaction.deferReply({ ephemeral: true });
