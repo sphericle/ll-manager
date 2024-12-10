@@ -74,8 +74,7 @@ module.exports = {
                     logger.log(`New yes votes: ${count}`)
 
                     await interaction.editReply({ content: "Updating thread name, this could take a while...", ephemeral: true });
-
-                    Logger.log("updating...")
+                    
                     // update the thread name
                     await interaction.channel.setName(`${matchLevelName[1]} ${count}-${matchNo[1]}`); // Set the channel name to the same thing but with the added yes
                 } catch (e) {
