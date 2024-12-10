@@ -25,10 +25,10 @@
 	"pendingRecordsID" : "988671478096609290",
 	"priorityRecordsID" : "988671478096609290",
 
-	"acceptedRecordsID" : "988671478096609290",
-	"deniedRecordsID" : "988671478096609290",
-	"archiveRecordsID" : "988671478096609290",
-	"recordsID" : "988671478096609290",
+	"acceptedRecordsID" : "1261042731807936575",
+	"deniedRecordsID" : "1261042731807936575",
+	"archiveRecordsID" : "0",
+	"recordsID" : "1261042731807936575",
 
 	"changelogID" : "988671478096609290",
 	"changelogRoleID": "1178255860972142662",
@@ -39,5 +39,5 @@
 	"shiftsLogsID": "1219796853822849084",
 	"recordsPerWeek": 60,
 
-	"submissionResultsID": "1314957293275840593"
+	"submissionResultsID": "884614851790524436"
 }
