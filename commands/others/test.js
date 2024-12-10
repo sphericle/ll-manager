@@ -5,8 +5,7 @@ module.exports = {
 	enabled: false,
 	data: new SlashCommandBuilder()
 		.setName('test')
-		.setDescription('Test')
-		.setDefaultMemberPermissions(0),
+		.setDescription('Test'),
 	async execute(interaction) {
 		const shiftsreminder = require('../../scheduled/shifts');
 		shiftsreminder.execute();
