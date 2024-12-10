@@ -12,7 +12,6 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('stats')
 		.setDescription('Statistics about the server')
-		.setDefaultMemberPermissions(0)
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('checkedrecords')
