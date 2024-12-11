@@ -59,6 +59,47 @@ module.exports = {
 						
 		.addSubcommand(subcommand =>
 			subcommand
+				.setName('submit')
+				.setDescription('Submit a level to be voted on')
+				.addStringOption(option =>
+					option.setName('levelname')
+						.setDescription('The name of the level to submit')
+						.setAutocomplete(true)
+						.setRequired(true))
+				.addStringOption(option =>
+					option.setName('verifier')
+						.setDescription('The name of the verifier')
+						.setRequired(true))
+				.addStringOption(option =>
+					option.setName('verification')
+						.setDescription('The link to the level\'s verification video')
+						.setRequired(true))
+				.addStringOption(option =>
+					option.setName('creators')
+						.setDescription('The list of the creators of the level, each separated by a comma'))
+				.addIntegerOption(option =>
+					option.setName('difficulty')
+						.setDescription('The level\'s difficulty on the site (1-10, see the list website for details)'))
+				.addIntegerOption(option =>
+					option.setName('percent')
+						.setDescription('The minimum percent players need to get a record on this level (list percent)'))
+				.addStringOption(option =>
+					option.setName('songname')
+						.setDescription('The name of this level\'s song. Required if there is a NONG.'))
+				.addStringOption(option =>
+					option.setName('songlink')
+						.setDescription('The NONG link for this level, if any. To get the link, you can upload the file in a discord message.'))
+				.addStringOption(option =>
+					option.setName('password')
+						.setDescription('The GD password of the level to place'))
+				.addIntegerOption(option =>
+					option.setName('enjoyment')
+						.setDescription('The name of the person who uploaded the level on GD'))
+				.addStringOption(option =>
+					option.setName('raw')
+						.setDescription('The verifier\'s raw footage (if the level is extreme+)')))
+		.addSubcommand(subcommand =>
+			subcommand
 				.setName('move')
 				.setDescription('Moves a level to another position on the list')
 				.addStringOption(option =>
@@ -148,7 +189,7 @@ module.exports = {
 				.addFields(
 					{ name: 'ID:', value: `${id}`, inline: true },
 					{ name: 'Uploader:', value: `${uploaderName}`, inline: true },
-					{ name: 'Creators:', value: `${rawCreators ? rawCreators.slice(0,1023) : 'None provided'}`, inline: true },
+					{ name: 'Creators:', value: `${rawCreators ? rawCreators.slice(0, 1023) : 'None provided'}`, inline: true },
 					{ name: 'Verifier:', value: `${verifierName}`, inline: true },
 					{ name: 'Verification:', value: `${verification}`, inline: true },
 					{ name: 'Password:', value: `${password}`, inline: true },
@@ -180,6 +221,8 @@ module.exports = {
 				return await interaction.editReply(':x: Something went wrong while adding the level; Please try again later');
 			}
 			return;
+		} else if (interaction.options.getSubcommand() === 'submit') {
+			return await interaction.editReply('Not implemented yet');
 		} else if (interaction.options.getSubcommand() === 'move') {
 			const { db, octokit } = require('../../index.js');
 
