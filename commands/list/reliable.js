@@ -59,6 +59,7 @@ module.exports = {
                 return await interaction.editReply('You must be in a thread to use this command');
             }
             
+            await interaction.editReply("Fetching thread info...");
             // get the thread name
             const text = interaction.channel.name;
             const matchLevelName = text.match(/^(.*)\s\d+-\d+$/);
@@ -89,7 +90,7 @@ module.exports = {
 
         } else if (interaction.options.getSubcommand() === 'no') {
 
-
+            await interaction.editReply('Fetching thread info...');
             // if the current channel is not a thread
             if (!interaction.channel.isThread()) {
                 return await interaction.editReply('You must be in a thread to use this command');
@@ -133,7 +134,7 @@ module.exports = {
             if (!interaction.channel.isThread()) {
                 return await interaction.editReply('You must be in a thread to use this command');
             }
-
+            await interaction.editReply("Fetching thread info...");
             // get the thread name
             const text = interaction.channel.name;
             const matchLevelName = text.match(/^(.*)\s\d+-\d+$/);
@@ -149,6 +150,7 @@ module.exports = {
                 .setTimestamp()
             
             if (command === 'reject') embed.setDescription(`Reason: ${interaction.options.getString('reason')}`)
+            await interaction.editReply("Sending message...");
             await submissionsChannel.send({
                 embeds: [ embed ],
                 content: interaction.options.getString('user') ? `<@${userToPing}>` : ''
