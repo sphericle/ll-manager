@@ -682,7 +682,7 @@ module.exports = {
 
 			await interaction.editReply(`Matched user ${user.name}`);
 			// Create embed to send with github code
-			const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${record.completionlink}",\n\t\t"percent": ${record.percent},\n\t\t"hz": ${record.fps}` + (record.enjoyment !== -1 ? `,\n\t\t"enjoyment": ${record.enjoyment}` : '') + (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
+			const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${record.completionlink}",\n\t\t"percent": ${record.percent},\n\t\t"hz": ${record.fps}` + (record.enjoyment !== -1 || null ? `,\n\t\t"enjoyment": ${record.enjoyment}` : '') + (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
 
 			const acceptEmbed = new EmbedBuilder()
 				.setColor(0x8fce00)
@@ -904,7 +904,6 @@ module.exports = {
 						logger.info(`Error fetching ${changePath} SHA:\n${error}`);
 						erroredRecords.push(`All from ${changePath}`);
 						return await interaction.editReply(`:x: Couldn't fetch data from ${changePath}`);
-						i++;
 
 					}
 
