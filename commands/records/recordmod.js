@@ -5,6 +5,7 @@ const { archiveRecordsID, acceptedRecordsID, recordsID, pendingRecordsID, priori
 const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
 const logger = require('log4js').getLogger();
 const { octokit } = require('../../index.js');
+const { createUser } = require('./records.js');
 
 module.exports = {
 	cooldown: 5,
@@ -229,7 +230,6 @@ module.exports = {
 				record = recordEntry.dataValues;
 			} catch (error) {
 				logger.error(`Error adding the record to the accepted table: ${error}`);
-				return await interaction.editReply(':x: Something wrong happened while executing the command; please try again later');
 			}
 
 			const shiftsLock = await db.infos.findOne({ where: { name: 'shifts' } });
@@ -238,7 +238,9 @@ module.exports = {
 
 			// Get cached user
 			const user = await cache.users.findOne({ where: { name: record.username } });
-			if (!user) return await interaction.editReply(':x: Couldn\'t find the user this record was submitted for (their name might have changed since they submitted it)');
+			if (!user) {
+				await createUser(interaction, [record.username]);
+			} 
 
 			await interaction.editReply(`Matched user ${user.name}`);
 			// Create embed to send with github code

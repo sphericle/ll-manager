@@ -139,7 +139,6 @@ async function createUser(interaction, user) {
 		cache.updateUsers();
 
 		logger.info(`All users have been added to the database.`);
-		return;
 	} else {
 		const { cache, octokit } = require('../../index.js');
 		const { githubOwner, githubRepo, githubDataPath, githubBranch } = require('../../config.json');
