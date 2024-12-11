@@ -76,7 +76,8 @@ module.exports = {
 						.setRequired(true))
 				.addStringOption(option =>
 					option.setName('creators')
-						.setDescription('The list of the creators of the level, each separated by a comma'))
+						.setDescription('The list of the creators of the level, each separated by a comma')
+						.setRequired(true))
 				.addIntegerOption(option =>
 					option.setName('difficulty')
 						.setDescription('The level\'s difficulty on the site (1-10, see the list website for details)'))
