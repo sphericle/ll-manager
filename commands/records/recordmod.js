@@ -171,6 +171,7 @@ module.exports = {
 			const { cache } = require('../../index.js');
 
 			// Check list banned
+			await interaction.editReply("Checking if the user is list banned...")
 			if (interaction.member.roles.cache.has(submissionLockRoleID)) {
 				await interaction.editReply(':x: Couldn\'t add the record: You have been banned from submitting records');
 				return;
@@ -183,6 +184,7 @@ module.exports = {
 			if (dbStatus.status) return await interaction.editReply(':x: Couldn\'t add the record: Submissions are closed at the moment');
 
 			// Check given URL
+			await interaction.editReply("Checking if the URL is valid...")
 			const linkStr = interaction.options.getString('completionlink');
 			if (/\s/g.test(linkStr) || !isUrlHttp(linkStr)) return await interaction.editReply(':x: Couldn\'t add the record: The provided completion link is not a valid URL');
 			const rawStr = interaction.options.getString('raw');
@@ -191,10 +193,12 @@ module.exports = {
 			
 
 			// Check enjoyment bounds (1-10)
+			await interaction.editReply("Checking if the enjoyment is valid...")
 			const enjoyment = interaction.options.getInteger('enjoyment');
 			if (enjoyment && (enjoyment < 1 || enjoyment > 10)) return await interaction.editReply(':x: Couldn\'t add the record: Enjoyment rating must be between 1 and 10');
 
 			// Check percent bounds (0-100)
+			await interaction.editReply("Checking if the percent is valid...")
 			const percent = interaction.options.getInteger('percent');
 			if (percent < 0 || percent > 100) return await interaction.editReply(':x: Couldn\'t add the record: Percent must be valid (1-100)');
 
@@ -203,6 +207,7 @@ module.exports = {
 			const level = await cache.levels.findOne({ where: { name: [interaction.options.getString('levelname')] } });
 
 
+			await interaction.editReply(`Matched level ${level.filename}`);
 			let record;
 			try {
 				const recordEntry = await db.acceptedRecords.create({
@@ -235,6 +240,7 @@ module.exports = {
 			const user = await cache.users.findOne({ where: { name: record.username } });
 			if (!user) return await interaction.editReply(':x: Couldn\'t find the user this record was submitted for (their name might have changed since they submitted it)');
 
+			await interaction.editReply(`Matched user ${user.name}`);
 			// Create embed to send with github code
 			const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${record.completionlink}",\n\t\t"percent": ${record.percent},\n\t\t"hz": ${record.fps}` + (record.enjoyment !== -1 ? `,\n\t\t"enjoyment": ${record.enjoyment}` : '') + (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
 
@@ -286,6 +292,8 @@ module.exports = {
 
 			logger.info(`${interaction.user.tag} (${interaction.user.id}) accepted record of ${record.levelname} for ${record.username} submitted by ${record.submitter}`);
 
+			await interaction.editReply("Adding record...");
+		
 			const filename = level.filename;
 			let fileResponse;
 			try {
@@ -343,6 +351,8 @@ module.exports = {
 
 			// if the record does not already exist or existed but has been updated
 			if (existing === false || updated === true) {
+				
+				await interaction.editReply("Committing...");
 				// Add new record to the level's file if this is a new record (not an updated one)
 				if (updated === false) parsedData.records = parsedData.records.concat(newRecord)
 

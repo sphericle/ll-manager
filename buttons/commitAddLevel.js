@@ -7,6 +7,9 @@ module.exports = {
 	async execute(interaction) {
 		const { octokit, db, cache } = require('../index.js');
 		const { enableChangelogMessage } = require('../config.json');
+		await interaction.deferReply({ ephemeral: true });
+
+		await interaction.editReply('Committing...');
 
 		// Check for level info corresponding to the message id
 		const level = await db.levelsToPlace.findOne({ where: { discordid: interaction.message.id } });

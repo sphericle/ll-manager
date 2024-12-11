@@ -111,6 +111,7 @@ module.exports = {
 		await interaction.deferReply({ ephemeral: true});
 
 		if (interaction.options.getSubcommand() === 'place') {
+			await interaction.editReply('Placing level...');
 
 			const { db, cache } = require('../../index.js');
 			const { Op } = require('sequelize');
@@ -135,6 +136,7 @@ module.exports = {
 				finalCreators.push(creatorName.trim()); // lol
 			}
 
+			await interaction.editReply('Coding...');
 			const githubCode = `{\n\t"id": ${id},\n\t"name": "${levelname}",\n\t"author": "${uploaderName}",\n\t"creators": ${JSON.stringify(finalCreators)},\n\t"verifier": "${verifierName}",\n\t"verification": "${verification}",\n\t"percentToQualify": ${percent},\n\t"password": "${password}",\n\t"difficulty": ${difficulty},\n\t"song": "${songName}",` + (songLink !== null ? `\n\t"songLink": "${songLink}",` : '') + `\n\t"records" : []\n}`;
 
 			const levelBelow = await cache.levels.findOne({ where: { position: position } });

@@ -1,5 +1,4 @@
 const { Events } = require('discord.js');
-const logger = require('log4js').getLogger();
 
 module.exports = {
 	name: Events.ThreadCreate,
