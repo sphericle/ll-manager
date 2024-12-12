@@ -396,7 +396,7 @@ module.exports = {
 					newCommit = await octokit.git.createCommit({
 						owner: githubOwner,
 						repo: githubRepo,
-						message: `Updated info for ${levelToEdit.name})`,
+						message: `Updated info for ${levelToEdit.name} (${interaction.user.name})`,
 						tree: newTree.data.sha,
 						parents: [commitSha],
 					});
