@@ -45,7 +45,7 @@ module.exports = {
             };
         });
         await interaction.respond(
-            filtered.map(user => {
+            filtered.slice(0, 25).map(user => {
                 return { name: user.name, value: user.value };
             }),
         );
