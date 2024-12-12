@@ -56,7 +56,6 @@ module.exports = {
 				.addIntegerOption(option =>
 					option.setName('percent')
 						.setDescription('The minimum percent players need to get a record on this level (list percent)')))
-						
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('submit')
@@ -127,7 +126,52 @@ module.exports = {
 					option.setName('level2')
 						.setDescription('The name of the second level')
 						.setAutocomplete(true)
-						.setRequired(true))),
+						.setRequired(true)))
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('edit')
+				.setDescription('Edit a level\'s info')
+				.addStringOption(option =>
+					option.setName('level')
+						.setDescription('The name of the level to edit')
+						.setAutocomplete(true)
+						.setRequired(true))
+				.addStringOption(option =>
+					option.setName('levelname')
+						.setDescription('The name of the level to place'))
+				.addIntegerOption(option =>
+					option.setName('position')
+						.setDescription('The position to place the level at'))
+				.addIntegerOption(option =>
+					option.setName('difficulty')
+						.setDescription('The tier the level is in (1-10, see the list website for details)'))
+				.addIntegerOption(option =>
+					option.setName('id')
+						.setDescription('The GD ID of the level to place'))
+				.addStringOption(option =>
+					option.setName('uploader')
+						.setDescription('The name of the person who uploaded the level on GD'))
+				.addStringOption(option =>
+					option.setName('verifier')
+						.setDescription('The name of the verifier'))
+				.addStringOption(option =>
+					option.setName('verification')
+						.setDescription('The link to the level\'s verification video'))
+				.addStringOption(option =>
+					option.setName('songname')
+						.setDescription('The name of this level\'s song'))
+				.addStringOption(option =>
+					option.setName('songlink')
+						.setDescription('The NONG link for this level, if any.'))
+				.addStringOption(option =>
+					option.setName('creators')
+						.setDescription('The list of the creators of the level, each separated by a comma'))
+				.addStringOption(option =>
+					option.setName('password')
+						.setDescription('The GD password of the level to place'))
+				.addIntegerOption(option =>
+					option.setName('percent')
+						.setDescription('The minimum percent players need to get a record on this level (list percent)'))),
 	async autocomplete(interaction) {
 		const focused = interaction.options.getFocused();
 		const { cache } = require('../../index.js');
@@ -224,6 +268,218 @@ module.exports = {
 			return;
 		} else if (interaction.options.getSubcommand() === 'submit') {
 			return await interaction.editReply('Not implemented yet');
+		} else if (interaction.options.getSubcommand() === 'edit') {
+			const { db, cache } = require('../../index.js');
+			const { octokit } = require('../../index.js');
+			const level = interaction.options.getString('level') || null;
+			const levelname = interaction.options.getString('levelname') || null;
+			const id = interaction.options.getInteger('id') || null;
+			const uploaderName = interaction.options.getString('uploader') || null;
+			const verifierName = interaction.options.getString('verifier') || null;
+			const verification = interaction.options.getString('verification') || null;
+			const password = interaction.options.getString('password') || null;
+			const rawCreators = interaction.options.getString('creators') || null;
+			const creatorNames = rawCreators ? rawCreators.split(',') : [];
+			const percent = interaction.options.getInteger('percent') || null;
+			const difficulty = interaction.options.getInteger('difficulty') || null;
+			const songName = interaction.options.getString('songname') || null;
+			const songLink = interaction.options.getString('songlink') || null;
+
+			const levelToEdit = await cache.levels.findOne({ where: { filename: level } });
+			const filename = levelToEdit.filename;
+			let fileResponse;
+			try {
+				fileResponse = await octokit.rest.repos.getContent({
+					owner: githubOwner,
+					repo: githubRepo,
+					path: githubDataPath + `/${filename}.json`,
+					branch: githubBranch,
+				});
+			} catch (fetchError) {
+				logger.info(`Couldn't fetch ${filename}.json: \n${fetchError}`);
+				return await interaction.editReply(`:x: Couldn't fetch ${filename}.json: \n${fetchError}`);
+			}
+
+			let parsedData;
+			try {
+				parsedData = JSON.parse(Buffer.from(fileResponse.data.content, 'base64').toString('utf-8'));
+			} catch (parseError) {
+				logger.info(`Unable to parse data fetched from ${filename}:\n${parseError}`);
+				return await interaction.editReply(`:x: Unable to parse data fetched from ${filename}:\n${parseError}`);
+			}
+
+			if (levelname !== null) parsedData.name = levelname;
+			if (id !== null) parsedData.id = id;
+			if (uploaderName !== null) parsedData.author = uploaderName;
+			if (verifierName !== null) parsedData.verifier = verifierName;
+			if (verification !== null) parsedData.verification = verification;
+			if (password !== null) parsedData.password = password;
+			if (creatorNames.length > 0) parsedData.creators = creatorNames;
+			if (percent !== null) parsedData.percentToQualify = percent;
+			if (difficulty !== null) parsedData.difficulty = difficulty;
+			if (songName !== null) parsedData.song = songName;
+			if (songLink !== null) parsedData.songLink = songLink;
+
+			let existing = true;
+
+			if (levelname !== null || id !== null || uploaderName !== null || verifierName !== null || verification !== null || password !== null || creatorNames.length > 0 || percent !== null || difficulty !== null || songName !== null || songLink !== null) existing = false;
+
+			if (existing) {
+				return await interaction.editReply('You didn\'t change anything');
+			}
+			await interaction.editReply("Committing...");
+
+			// not sure why it needs to be done this way but :shrug:
+			let changes = [];
+			changes.push({
+				path: githubDataPath + `/${filename}.json`,
+				content: JSON.stringify(parsedData, null, '\t'),
+			})
+
+			const changePath = githubDataPath + `/${filename}.json`
+			const content = JSON.stringify(parsedData);
+
+			const debugStatus = await db.infos.findOne({ where: { name: 'commitdebug' } });
+			if (!debugStatus || !debugStatus.status) {
+				let commitSha;
+				try {
+					// Get the SHA of the latest commit from the branch
+					const { data: refData } = await octokit.git.getRef({
+						owner: githubOwner,
+						repo: githubRepo,
+						ref: `heads/${githubBranch}`,
+					});
+					commitSha = refData.object.sha;
+				} catch (getRefError) {
+					logger.info(`Something went wrong while fetching the latest commit SHA:\n${getRefError}`);
+					await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
+					return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (getRefError)');
+				}
+				let treeSha;
+				try {
+					// Get the commit using its SHA
+					const { data: commitData } = await octokit.git.getCommit({
+						owner: githubOwner,
+						repo: githubRepo,
+						commit_sha: commitSha,
+					});
+					treeSha = commitData.tree.sha;
+				} catch (getCommitError) {
+					logger.info(`Something went wrong while fetching the latest commit:\n${getCommitError}`);
+					await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
+					return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (getCommitError)');
+				}
+
+				let newTree;
+				try {
+					// Create a new tree with the changes
+					newTree = await octokit.git.createTree({
+						owner: githubOwner,
+						repo: githubRepo,
+						base_tree: treeSha,
+						tree: changes.map(change => ({
+							path: change.path,
+							mode: '100644',
+							type: 'blob',
+							content: change.content,
+						})),
+					});
+				} catch (createTreeError) {
+					logger.info(`Something went wrong while creating a new tree:\n${createTreeError}`);
+					await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
+					return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (createTreeError)');
+				}
+
+				let newCommit;
+				try {
+					// Create a new commit with this tree
+					newCommit = await octokit.git.createCommit({
+						owner: githubOwner,
+						repo: githubRepo,
+						message: `Updated info for ${levelToEdit.name})`,
+						tree: newTree.data.sha,
+						parents: [commitSha],
+					});
+				} catch (createCommitError) {
+					logger.info(`Something went wrong while creating a new commit:\n${createCommitError}`);
+					await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
+					return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (createCommitError)');
+				}
+
+				try {
+					// Update the branch to point to the new commit
+					await octokit.git.updateRef({
+						owner: githubOwner,
+						repo: githubRepo,
+						ref: `heads/${githubBranch}`,
+						sha: newCommit.data.sha,
+					});
+				} catch (updateRefError) {
+					logger.info(`Something went wrong while updating the branch :\n${updateRefError}`);
+					await db.messageLocks.destroy({ where: { discordid: interaction.message.id } });
+					return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (updateRefError)');
+				}
+				logger.info(`Successfully created commit on ${githubBranch} (record addition): ${newCommit.data.sha}`);
+				await interaction.editReply("This record has been added!");
+			} else {
+				let updatedFiles = 0;
+				let i = 1;
+				// Get file SHA
+				let fileSha;
+				try {
+					const response = await octokit.repos.getContent({
+						owner: githubOwner,
+						repo: githubRepo,
+						path: changePath,
+					});
+					fileSha = response.data.sha;
+				} catch (error) {
+					logger.info(`Error fetching ${changePath} SHA:\n${error}`);
+					erroredRecords.push(`All from ${changePath}`);
+					return await interaction.editReply(`:x: Couldn't fetch data from ${changePath}`);
+					i++;
+
+				}
+
+				try {
+					await octokit.repos.createOrUpdateFileContents({
+						owner: githubOwner,
+						repo: githubRepo,
+						path: changePath,
+						message: `Updated ${changePath} (${interaction.user.tag})`,
+						content: Buffer.from(content).toString('base64'),
+						sha: fileSha,
+					});
+					logger.info(`Updated ${changePath} (${interaction.user.tag}`);
+				} catch (error) {
+					logger.info(`Failed to update ${changePath} (${interaction.user.tag}):\n${error}`);
+					erroredRecords.push(`All from ${changePath}`);
+					await interaction.editReply(`:x: Couldn't update the file ${changePath}, skipping...`);
+				}
+				updatedFiles++;
+				i++;
+
+				let detailedErrors = '';
+				for (const err of erroredRecords) detailedErrors += `\n${err}`;
+
+				const replyEmbed = new EmbedBuilder()
+					.setColor(0x8fce00)
+					.setTitle(':white_check_mark: Commit successful')
+					.setDescription(`Successfully updated ${updatedFiles}/ files`)
+					.addFields(
+						{ name: 'Duplicates found:', value: `**${duplicateRecords}**`, inline: true },
+						{ name: 'Errors:', value: `${erroredRecords.length}`, inline: true },
+						{ name: 'Detailed Errors:', value: (detailedErrors.length == 0 ? 'None' : detailedErrors) },
+					)
+					.setTimestamp();
+				await interaction.message.delete();
+				await interaction.editReply(':white_check_mark: The record has been accepted');
+			}
+
+			logger.info(`${interaction.user.tag} (${interaction.user.id}) submitted ${interaction.options.getString('levelname')} for ${interaction.options.getString('username')}`);
+			// Reply
+			await interaction.editReply(`:white_check_mark: ${levelToEdit.name} has been edited successfully`);
+			return;
 		} else if (interaction.options.getSubcommand() === 'move') {
 			const { db, octokit } = require('../../index.js');
 
