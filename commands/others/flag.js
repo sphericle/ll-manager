@@ -113,7 +113,7 @@ module.exports = {
                     repo: githubRepo,
                     path: githubDataPath + `/_flags.json`,
                     branch: githubBranch,
-                    message: `Add ${username}'s flag`,
+                    message: `Set ${username}'s flag (${interaction.user.tag})`,
                     content: Buffer.from(JSON.stringify(parsedData)).toString('base64'),
                     sha: fileSha
                 });
