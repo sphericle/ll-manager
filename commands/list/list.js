@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, AttachmentBuilder } = require('discord.js');
 const { githubOwner, githubRepo, githubDataPath, githubBranch } = require('../../config.json');
 const logger = require('log4js').getLogger();
+const { Sequelize } = require('sequelize');
 
 module.exports = {
 	cooldown: 5,
@@ -114,6 +115,15 @@ module.exports = {
 						.setMinValue(1)
 						.setRequired(true)))
 		.addSubcommand(subcommand =>
+			subcommand.setName('hide')
+				.setDescription('hide a level from the list')
+				.addStringOption(option =>
+					option.setName('levelname')
+						.setDescription('The name of the level to delete')
+						.setRequired(true)
+						.setMaxLength(1024)
+						.setAutocomplete(true)))
+		.addSubcommand(subcommand =>
 			subcommand
 				.setName('mutualvictors')
 				.setDescription('Finds all victors that have beaten both levels')
@@ -173,7 +183,7 @@ module.exports = {
 					option.setName('percent')
 						.setDescription('The minimum percent players need to get a record on this level (list percent)'))),
 	async autocomplete(interaction) {
-		const focused = interaction.options.getFocused();
+		const focused = interaction.options.getFocused(true);
 		const { cache } = require('../../index.js');
 		const subcommand = interaction.options.getSubcommand();
 		if (subcommand === 'renameuser') return await interaction.respond(
@@ -183,12 +193,25 @@ module.exports = {
 			).filter(user => user.name.toLowerCase().includes(focused.toLowerCase()))
 				.slice(0,25)
 				.map(user => ({ name: user.name, value: user.user_id }))
+		);
+		else if (subcommand === "hide") {
+			let levels = await cache.levels.findAll({
+				where: {
+					name: Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('name')), 'LIKE', '%' + focused.value.toLowerCase() + '%')
+				}
+			});
+			return await interaction.respond(
+				levels.slice(0, 25).map(level => ({ name: level.name, value: level.name })),
 			);
-		else return await interaction.respond(
+		}
+		else 
+			return await interaction.respond(
 			(await 
 				(subcommand === "fromlegacy" ? cache.legacy : cache.levels)
 				.findAll({where: {}})
-			).filter(level => level.name.toLowerCase().includes(focused.toLowerCase()))
+				).filter(level => level.name.toLowerCase().includes(
+					focused.value.toLowerCase()
+				))
 				.slice(0,25)
 				.map(level => ({ name: level.name, value: level.filename }))
 			);
@@ -648,7 +671,7 @@ module.exports = {
 			if (!user) return await interaction.editReply(':x: Couldn\'t find the user you are trying to rename');
 
 			// Change user on github
-			let name_map_response;	
+			let name_map_response;
 			try {
 				name_map_response = await octokit.rest.repos.getContent({
 					owner: githubOwner,
@@ -663,7 +686,7 @@ module.exports = {
 			}
 
 			const names = JSON.parse(Buffer.from(name_map_response.data.content, 'base64').toString('utf-8'));
-			if (Object.values(names).includes(newname)) 
+			if (Object.values(names).includes(newname))
 				return await interaction.editReply(':x: Another user already has this name. If you are trying to merge two users, you need to manually replace the IDs on github.');
 			names[userID] = newname;
 
@@ -754,7 +777,7 @@ module.exports = {
 				await db.pendingRecords.update({ username: newname }, { where: { username: user.name } });
 				await db.acceptedRecords.update({ username: newname }, { where: { username: user.name } });
 				await db.deniedRecords.update({ username: newname }, { where: { username: user.name } });
-			} catch(error) {
+			} catch (error) {
 				logger.info(`Failed to update records (username change): ${error}`);
 			}
 			cache.updateUsers();
@@ -772,7 +795,7 @@ module.exports = {
 			if (await cache.levels.findOne({ where: { filename: level2 } }) == null) return await interaction.editReply(`:x: Level **${level2}** not found`);
 
 
-			let level1_response, level2_response;	
+			let level1_response, level2_response;
 			try {
 				level1_response = await octokit.rest.repos.getContent({
 					owner: githubOwner,
@@ -816,6 +839,113 @@ module.exports = {
 			const mutualVictorNamesString = mutualVictorNames.map(victor => victor.name).join('\n- ');
 			const attachment = new AttachmentBuilder(Buffer.from("- " + mutualVictorNamesString)).setName(`mutual_victors_${level1}_${level2}.txt`);
 			return await interaction.editReply({ content: `:white_check_mark: Found ${mutualVictorNames.length} mutual victors between **${level1}** and **${level2}**\n`, files: [attachment] });
+		} else if (interaction.options.getSubcommand() === 'hide') {
+			const { cache, octokit } = require('../../index.js');
+			const levelname = await interaction.options.getString('levelname');
+			logger.log(levelname);
+			const level = await cache.levels.findOne({ where: { name: levelname } });
+			
+
+			const list = JSON.parse(Buffer.from((await octokit.rest.repos.getContent({
+				owner: githubOwner,
+				repo: githubRepo,
+				path: githubDataPath + `/_list.json`,
+				branch: githubBranch,
+			})).data.content, 'base64').toString('utf-8'));
+
+			index = list.findIndex(level => level.name === levelname);
+			list.splice(index, 1);
+
+			cache.levels.destroy({ where: { name: levelname } });
+
+
+			const filename = level.filename;
+			const changes = [
+				{
+					path: githubDataPath + '/_list.json',
+					content: JSON.stringify(list, null, '\t'),
+				},
+				{
+					path: githubDataPath + `/archived/${filename}.json`,
+				},
+			]
+
+			let commitSha;
+			try {
+				// Get the SHA of the latest commit from the branch
+				const { data: refData } = await octokit.git.getRef({
+					owner: githubOwner,
+					repo: githubRepo,
+					ref: `heads/${githubBranch}`,
+				});
+				commitSha = refData.object.sha;
+			} catch (getRefErr) {
+				logger.info(`Something went wrong while getting the latest commit SHA: \n${getRefErr}`);
+				return await interaction.editReply(':x: Couldn\'t commit to github, please try again later (getRefError)');
+			}
+
+			let treeSha;
+			try {
+				// Get the commit using its SHA
+				const { data: commitData } = await octokit.git.getCommit({
+					owner: githubOwner,
+					repo: githubRepo,
+					commit_sha: commitSha,
+				});
+				treeSha = commitData.tree.sha;
+			} catch (getCommitErr) {
+				logger.info(`Something went wrong while getting the latest commit: \n${getCommitErr}`);
+				return await interaction.editReply(':x: Couldn\'t commit to github, please try again later (getCommitError)');
+			}
+
+			let newTree;
+			try {
+				// Create a new tree with the changes
+				newTree = await octokit.git.createTree({
+					owner: githubOwner,
+					repo: githubRepo,
+					base_tree: treeSha,
+					tree: changes.map(change => ({
+						path: change.path,
+						mode: '100644',
+						type: 'blob',
+						content: change.content || '',
+					})),
+				});
+			} catch (createTreeErr) {
+				logger.info(`Something went wrong while creating a new tree: \n${createTreeErr}`);
+				return await interaction.editReply(':x: Couldn\'t commit to github, please try again later (createTreeError)');
+			}
+
+			let newCommit;
+			try {
+				// Create a new commit with this tree
+				newCommit = await octokit.git.createCommit({
+					owner: githubOwner,
+					repo: githubRepo,
+					message: `Hid ${levelname} from the list (${interaction.user.tag})`,
+					tree: newTree.data.sha,
+					parents: [commitSha],
+				});
+			} catch (createCommitErr) {
+				logger.info(`Something went wrong while creating a new commit: \n${createCommitErr}`);
+				return await interaction.editReply(':x: Couldn\'t commit to github, please try again later (createCommitError)');
+			}
+
+			try {
+				// Update the branch to point to the new commit
+				await octokit.git.updateRef({
+					owner: githubOwner,
+					repo: githubRepo,
+					ref: `heads/${githubBranch}`,
+					sha: newCommit.data.sha,
+				});
+			} catch (updateRefErr) {
+				logger.info(`Something went wrong while updating the branch reference: \n${updateRefErr}`);
+				return await interaction.editReply(':x: Couldn\'t commit to github, please try again later (updateRefError)');
+			}
+
+			return await interaction.editReply(`Archived ${levelname}`)
 		}
 	},
 };
