@@ -68,7 +68,7 @@ module.exports = {
             const username = interaction.options.getString('username');
             const flag = interaction.options.getString('flag');
 
-            if (flag.length > 2) return awakt interaction.editReply("Invalid country! Make sure you specifically choose an autocompleted option.")
+            if (flag.length > 2) return await interaction.editReply("Invalid country! Make sure you specifically choose an autocompleted option.")
                 
             // fetch github data path / _flags.json
             let fileResponse;
