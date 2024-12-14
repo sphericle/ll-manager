@@ -19,7 +19,7 @@ module.exports = {
                         .setAutocomplete(true))
                 .addStringOption(option =>
                     option.setName('flag')
-                        .setDescription('The country to set the user\'s flag to')
+                        .setDescription('The country to set the user\'s flag to. Be sure to choose an option above.')
                         .setRequired(true)
                         .setAutocomplete(true)))
         .addSubcommand(subcommand =>
@@ -68,6 +68,8 @@ module.exports = {
             const username = interaction.options.getString('username');
             const flag = interaction.options.getString('flag');
 
+            if (flag.length > 2) return awakt interaction.editReply("Invalid country! Make sure you specifically choose an autocompleted option.")
+                
             // fetch github data path / _flags.json
             let fileResponse;
             try {
