@@ -7,7 +7,6 @@ module.exports = {
 	async execute(interaction) {
 		const { octokit, db, cache } = require('../index.js');
 		const { enableChangelogMessage } = require('../config.json');
-		await interaction.deferReply({ ephemeral: true });
 
 		await interaction.editReply('Committing...');
 
@@ -45,13 +44,26 @@ module.exports = {
 
 		const list = JSON.parse(Buffer.from(list_response.data.content, 'base64').toString('utf-8'));
 
+		// filter out all levels that are not dividers
+		const noDiv = list.filter(level => !level.startsWith("_"))
+
 		const changelogList = changelog_response ? JSON.parse(Buffer.from(changelog_response.data.content, 'base64').toString('utf-8')) : [];
 
 		if (level.position < 1 || level.position > list.length + 1) {
 			return await interaction.editReply(':x: The given position is incorrect');
 		}
 
-		list.splice(level.position - 1, 0, level.filename);
+		// get the level below the level we want to place
+		// +2 because 1 is index offset and 1 is to get the above level
+		const levelBelow = noDiv[level.position + 2];
+		logger.log(`Level below: ${levelBelow}`)
+
+		// find the index of that level in the real list
+		const realAbove = list.indexOf(levelBelow)
+		
+		// insert the level above the real list index
+		// -2 because -1 is for indexing and -1 is to put it above levelBelow
+		list.splice(realAbove - 2, 0, level.filename);
 		
 		changelogList.push({
 			"date": Math.floor(new Date().getTime() / 1000),
