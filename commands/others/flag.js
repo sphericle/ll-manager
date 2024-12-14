@@ -126,7 +126,64 @@ module.exports = {
 
             return await interaction.editReply(`:white_check_mark: Successfully set ${username}'s flag to ${flag}`);
         } else if (subcommand === 'remove') {
-            return await interaction.editReply(`Not implemented yet`);
+            const username = interaction.options.getString('username');
+
+            // fetch github data path / _flags.json
+            let fileResponse;
+            try {
+                fileResponse = await octokit.rest.repos.getContent({
+                    owner: githubOwner,
+                    repo: githubRepo,
+                    path: githubDataPath + `/_flags.json`,
+                    branch: githubBranch,
+                });
+            } catch (fetchError) {
+                logger.info(`Couldn't fetch flags.json: \n${fetchError}`);
+                return await interaction.editReply(`:x: Couldn't fetch flags.json: \n${fetchError}`);
+            }
+
+            let parsedData;
+            try {
+                parsedData = JSON.parse(Buffer.from(fileResponse.data.content, 'base64').toString('utf-8'));
+            } catch (parseError) {
+                logger.info(`Unable to parse flags data:\n${parseError}`);
+                return await interaction.editReply(`:x: Unable to parse flags data:\n${parseError}`);
+            }
+
+            // remove entry in json
+            delete parsedData[username];
+
+            let fileSha;
+            try {
+                const response = await octokit.repos.getContent({
+                    owner: githubOwner,
+                    repo: githubRepo,
+                    path: githubDataPath + `/_flags.json`,
+                });
+                fileSha = response.data.sha;
+            } catch (error) {
+                logger.info(`Error fetching ${changePath} SHA:\n${error}`);
+                erroredRecords.push(`All from ${changePath}`);
+                return await interaction.editReply(`:x: Couldn't fetch data from ${changePath}`);
+                i++;
+
+            }
+            try {
+                await octokit.repos.createOrUpdateFileContents({
+                    owner: githubOwner,
+                    repo: githubRepo,
+                    path: githubDataPath + `/_flags.json`,
+                    branch: githubBranch,
+                    message: `Set ${username}'s flag (${interaction.user.tag})`,
+                    content: Buffer.from(JSON.stringify(parsedData)).toString('base64'),
+                    sha: fileSha
+                });
+            } catch (updateError) {
+                logger.info(`Couldn't update flags.json: \n${updateError}`);
+                return await interaction.editReply(`:x: Couldn't update flags.json: \n${updateError}`);
+            }
+
+            return await interaction.editReply(`:white_check_mark: Successfully removed ${username}'s flag}`);
         }
     },
 };
