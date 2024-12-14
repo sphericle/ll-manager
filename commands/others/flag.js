@@ -33,7 +33,6 @@ module.exports = {
                         .setAutocomplete(true))),
     async autocomplete(interaction) {
         const focused = interaction.options.getFocused(true);
-
         const { cache } = require('../../index.js');
         const Sequelize = require('sequelize');
         
@@ -59,7 +58,6 @@ module.exports = {
         }
     },
     async execute(interaction) {
-        // defer reply
         await interaction.deferReply({ ephemeral: true });
 
         const subcommand = interaction.options.getSubcommand();
@@ -91,6 +89,8 @@ module.exports = {
                 logger.info(`Unable to parse flags data:\n${parseError}`);
                 return await interaction.editReply(`:x: Unable to parse flags data:\n${parseError}`);
             }
+            
+            if (parsedData[username] === flag) return await interaction.editReply(`:x: ${username}'s flag is already set to ${flag}`);
 
             parsedData[username] = flag;
             
@@ -149,7 +149,7 @@ module.exports = {
                 logger.info(`Unable to parse flags data:\n${parseError}`);
                 return await interaction.editReply(`:x: Unable to parse flags data:\n${parseError}`);
             }
-
+            if (!parsedData[username]) return await interaction.editReply(`:x: ${username} doesn't have a flag!`);
             // remove entry in json
             delete parsedData[username];
 
@@ -174,7 +174,7 @@ module.exports = {
                     repo: githubRepo,
                     path: githubDataPath + `/_flags.json`,
                     branch: githubBranch,
-                    message: `Set ${username}'s flag (${interaction.user.tag})`,
+                    message: `Delete ${username}'s flag (${interaction.user.tag})`,
                     content: Buffer.from(JSON.stringify(parsedData)).toString('base64'),
                     sha: fileSha
                 });
@@ -183,7 +183,7 @@ module.exports = {
                 return await interaction.editReply(`:x: Couldn't update flags.json: \n${updateError}`);
             }
 
-            return await interaction.editReply(`:white_check_mark: Successfully removed ${username}'s flag}`);
+            return await interaction.editReply(`:white_check_mark: Successfully removed ${username}'s flag`);
         }
     },
 };
