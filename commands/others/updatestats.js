@@ -2,7 +2,6 @@ const { SlashCommandBuilder } = require('discord.js');
 const Sequelize = require('sequelize');
 
 module.exports = {
-	cooldown: 5,
 	enabled: false,
 	data: new SlashCommandBuilder()
 		.setName('updatestats')
