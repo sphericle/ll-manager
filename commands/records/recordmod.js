@@ -8,7 +8,6 @@ const { octokit } = require('../../index.js');
 const { createUser } = require('./records.js');
 
 module.exports = {
-	cooldown: 5,
 	enabled: true,
 	data: new SlashCommandBuilder()
 		.setName('recordmod')
