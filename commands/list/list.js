@@ -731,6 +731,26 @@ module.exports = {
 					content: JSON.stringify(parsedData, null, '\t'),
 				})
 			}
+			
+			// remove old flag entry and set a new one
+			const flagsFilename = 'data/_flags.json';
+			let flags;
+			try {
+				flags = JSON.parse(fs.readFileSync(path.join(localRepoPath, flagsFilename), 'utf8'));
+			} catch (parseError) {
+				if (!flagsFilename.startsWith('_')) logger.error('Git - ' + `Unable to parse data from ${listFilename}:\n${parseError}`);
+				return;
+			}
+			
+			if (flags[olduser] && !flags[newuser]) {
+				flags[newuser] = flags[olduser];
+				delete flags[olduser];
+				changes.push({
+					path: githubDataPath + `/_flags.json`,
+					content: JSON.stringify(flags, null, '\t'),
+				})
+			}
+			
 			let commitSha;
 			try {
 				// Get the SHA of the latest commit from the branch
