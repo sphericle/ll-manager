@@ -4,7 +4,6 @@ const logger = require('log4js').getLogger();
 const { Sequelize } = require('sequelize');
 
 module.exports = {
-	cooldown: 5,
 	enabled: true,
 	data: new SlashCommandBuilder()
 		.setName('list')
