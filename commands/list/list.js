@@ -181,7 +181,20 @@ module.exports = {
 						.setDescription('The GD password of the level to place'))
 				.addIntegerOption(option =>
 					option.setName('percent')
-						.setDescription('The minimum percent players need to get a record on this level (list percent)'))),
+						.setDescription('The minimum percent players need to get a record on this level (list percent)')))
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('renameuser')
+				.setDescription('Rename a user')
+				.addStringOption(option =>
+					option.setName('username')
+						.setDescription('The name of the user to rename')
+						.setAutocomplete(true)
+						.setRequired(true))
+				.addStringOption(option =>
+					option.setName('newusername')
+						.setDescription('The new name of the user')
+						.setRequired(true))),
 	async autocomplete(interaction) {
 		const focused = interaction.options.getFocused(true);
 		const { cache } = require('../../index.js');
@@ -190,9 +203,9 @@ module.exports = {
 			(await 
 				cache.users
 				.findAll({where: {}})
-			).filter(user => user.name.toLowerCase().includes(focused.toLowerCase()))
+			).filter(user => user.name.toLowerCase().includes(focused.value.toLowerCase()))
 				.slice(0,25)
-				.map(user => ({ name: user.name, value: user.user_id }))
+				.map(user => ({ name: user.name, value: user.name }))
 		);
 		else if (subcommand === "hide") {
 			let levels = await cache.levels.findAll({
@@ -662,16 +675,63 @@ module.exports = {
 			return;
 		} else if (interaction.options.getSubcommand() === 'renameuser') {
 			const { cache, octokit } = require('../../index.js');
+			const path = require('path');
+			const fs = require('fs');
 			const { githubOwner, githubRepo, githubDataPath, githubBranch } = require('../../config.json');
 
-			const userID = interaction.options.getString('user');
-			const newname = interaction.options.getString('newname');
+			const olduser = interaction.options.getString('username');
+			const newuser = interaction.options.getString('newusername');
 
 			const changes = [];
 			
-			// loop thru all levels, overwrite the necessary fields
-			// with new data. push each file to changes.
+			const localRepoPath = path.resolve(__dirname, `../../data/repo/`);
+			const listFilename = 'data/_list.json';
+			let list_data;
+			try {
+				list_data = JSON.parse(fs.readFileSync(path.join(localRepoPath, listFilename), 'utf8'));
+			} catch (parseError) {
+				if (!listFilename.startsWith('_')) logger.error('Git - ' + `Unable to parse data from ${listFilename}:\n${parseError}`);
+				return -1;
+			}			
+			for (const filename of list_data) {
+				let edited = false;
+				let parsedData;
+				try {
+					parsedData = JSON.parse(fs.readFileSync(path.join(localRepoPath, `data/${filename}.json`), 'utf8'));
+				} catch (parseError) {
+					if (!filename.startsWith('_')) logger.error('Git - ' + `Unable to parse data from ${filename}.json:\n${parseError}`);
+					continue;
+				}
 
+				if (parsedData.author === olduser) {
+					parsedData.author = newuser;
+					edited = true;
+				}
+
+				if (parsedData.verifier === olduser) {
+					parsedData.verifier = newuser;
+					edited = true;
+				}
+
+				for (const creator of parsedData.creators) {
+					if (creator === olduser) {
+						creator = newuser;
+						edited = true;
+					}
+				}
+
+				for (const record of parsedData.records) {
+					if (record.user === olduser) {
+						record.user = newuser;
+						edited = true;
+					}
+				}
+				
+				if (edited) changes.push({
+					path: githubDataPath + `/${filename}.json`,
+					content: JSON.stringify(parsedData, null, '\t'),
+				})
+			}
 			let commitSha;
 			try {
 				// Get the SHA of the latest commit from the branch
@@ -725,7 +785,7 @@ module.exports = {
 				newCommit = await octokit.git.createCommit({
 					owner: githubOwner,
 					repo: githubRepo,
-					message: `${interaction.user.tag} renamed ${user.name} to ${newname}`,
+					message: `${interaction.user.tag} renamed ${olduser} to ${newuser}`,
 					tree: newTree.data.sha,
 					parents: [commitSha],
 				});
@@ -749,16 +809,15 @@ module.exports = {
 
 			const { db } = require('../../index.js');
 			try {
-				await db.pendingRecords.update({ username: newname }, { where: { username: user.name } });
-				await db.acceptedRecords.update({ username: newname }, { where: { username: user.name } });
-				await db.deniedRecords.update({ username: newname }, { where: { username: user.name } });
+				await db.pendingRecords.update({ username: newuser }, { where: { username: olduser } });
+				await db.acceptedRecords.update({ username: newuser }, { where: { username: olduser } });
+				await db.deniedRecords.update({ username: newuser }, { where: { username: olduser } });
 			} catch (error) {
 				logger.info(`Failed to update records (username change): ${error}`);
 			}
 			cache.updateUsers();
-			logger.info(`${interaction.user.tag} (${interaction.user.id}) renamed ${user.name} (${user.user_id}) to ${newname}`);
-			return await interaction.editReply(`:white_check_mark: Successfully renamed **${user.name}** to **${newname}**`);
-
+			logger.info(`${interaction.user.tag} (${interaction.user.id}) renamed ${olduser} to ${newuser}`);
+			return await interaction.editReply(`:white_check_mark: Successfully renamed **${olduser}** to **${newuser}**`);
 		} else if (interaction.options.getSubcommand() === 'mutualvictors') {
 			const { cache, octokit } = require('../../index.js');
 			const { Op, Sequelize } = require('sequelize');
