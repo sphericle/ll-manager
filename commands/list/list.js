@@ -667,35 +667,10 @@ module.exports = {
 			const userID = interaction.options.getString('user');
 			const newname = interaction.options.getString('newname');
 
-			const user = await cache.users.findOne({ where: { user_id: userID } });
-			if (!user) return await interaction.editReply(':x: Couldn\'t find the user you are trying to rename');
-
-			// Change user on github
-			let name_map_response;
-			try {
-				name_map_response = await octokit.rest.repos.getContent({
-					owner: githubOwner,
-					repo: githubRepo,
-					path: githubDataPath + '/_name_map.json',
-					branch: githubBranch,
-				});
-
-			} catch (fetchError) {
-				logger.info(`Failed to fetch _name_map.json: ${fetchError}`);
-				return await interaction.editReply(':x: Something went wrong while renaming the user; please try again later');
-			}
-
-			const names = JSON.parse(Buffer.from(name_map_response.data.content, 'base64').toString('utf-8'));
-			if (Object.values(names).includes(newname))
-				return await interaction.editReply(':x: Another user already has this name. If you are trying to merge two users, you need to manually replace the IDs on github.');
-			names[userID] = newname;
-
-			const changes = [
-				{
-					path: githubDataPath + '/_name_map.json',
-					content: JSON.stringify(names, null, '\t'),
-				}
-			];
+			const changes = [];
+			
+			// loop thru all levels, overwrite the necessary fields
+			// with new data. push each file to changes.
 
 			let commitSha;
 			try {
