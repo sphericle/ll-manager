@@ -5,7 +5,6 @@ const logger = require('log4js').getLogger();
 
 async function createUser(interaction, user) {
 	// Create a new user //
-
 	if (Array.isArray(user)) {
 		logger.info('Creating multiple users...');
 		const { cache, octokit } = require('../../index.js');
