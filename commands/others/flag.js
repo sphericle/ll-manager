@@ -115,7 +115,7 @@ module.exports = {
                     path: githubDataPath + `/_flags.json`,
                     branch: githubBranch,
                     message: `Set ${username}'s flag (${interaction.user.tag})`,
-                    content: JSON.stringify(parsedData, null, "\t"),
+                    content: Buffer.from(JSON.stringify(parsedData, null, "\t")).toString('base64'),
                     sha: fileSha
                 });
             } catch (updateError) {
@@ -174,7 +174,7 @@ module.exports = {
                     path: githubDataPath + `/_flags.json`,
                     branch: githubBranch,
                     message: `Delete ${username}'s flag (${interaction.user.tag})`,
-                    content: JSON.stringify(parsedData, null, "\t"),
+                    content: Buffer.from(JSON.stringify(parsedData, null, "\t")).toString('base64'),
                     sha: fileSha
                 });
             } catch (updateError) {
