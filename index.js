@@ -56,7 +56,7 @@ module.exports = { db, cache, octokit, client, sequelize, git };
 
 async function start() {
 	logger.info('-'.repeat(40));
-	logger.info('AREDL Manager starting...');
+	logger.info('Layout List Bot starting...');
 	logger.info('-'.repeat(40));
 	try {
 		await sequelizeInit(db, cache);

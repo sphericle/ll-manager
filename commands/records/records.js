@@ -357,7 +357,7 @@ module.exports = {
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('createuser')
-				.setDescription('Creates a new AREDL account')
+				.setDescription('Creates a new LL account')
 				.addStringOption(option =>
 					option.setName('username')
 						.setDescription('The username you want to create')

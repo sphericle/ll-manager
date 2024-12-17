@@ -114,8 +114,8 @@ module.exports = {
 						.setMinValue(1)
 						.setRequired(true)))
 		.addSubcommand(subcommand =>
-			subcommand.setName('hide')
-				.setDescription('hide a level from the list')
+			subcommand.setName('remove')
+				.setDescription('Remove/hide a level from the list')
 				.addStringOption(option =>
 					option.setName('levelname')
 						.setDescription('The name of the level to delete')
@@ -895,8 +895,7 @@ module.exports = {
 		} else if (interaction.options.getSubcommand() === 'hide') {
 			const { cache, octokit } = require('../../index.js');
 			const levelname = await interaction.options.getString('levelname');
-			logger.log(levelname);
-			const level = await cache.levels.findOne({ where: { name: levelname } });
+			const levelToDelete = await cache.levels.findOne({ where: { name: levelname } });
 			
 
 			const list = JSON.parse(Buffer.from((await octokit.rest.repos.getContent({
@@ -906,13 +905,14 @@ module.exports = {
 				branch: githubBranch,
 			})).data.content, 'base64').toString('utf-8'));
 
-			index = list.findIndex(level => level.name === levelname);
+			index = list.findIndex(level => level === levelToDelete.filename);
+			logger.log(index)
 			list.splice(index, 1);
 
-			cache.levels.destroy({ where: { name: levelname } });
+			cache.levels.destroy({ where: { filename: levelToDelete.filename } });
 
 
-			const filename = level.filename;
+			const filename = levelToDelete.filename;
 			const changes = [
 				{
 					path: githubDataPath + '/_list.json',
@@ -976,7 +976,7 @@ module.exports = {
 				newCommit = await octokit.git.createCommit({
 					owner: githubOwner,
 					repo: githubRepo,
-					message: `Hid ${levelname} from the list (${interaction.user.tag})`,
+					message: `Removed ${levelname} from the list (${interaction.user.tag})`,
 					tree: newTree.data.sha,
 					parents: [commitSha],
 				});
@@ -998,7 +998,7 @@ module.exports = {
 				return await interaction.editReply(':x: Couldn\'t commit to github, please try again later (updateRefError)');
 			}
 
-			return await interaction.editReply(`Archived ${levelname}`)
+			return await interaction.editReply(`:white_check_mark: Removed ${levelname}!`)
 		}
 	},
 };
