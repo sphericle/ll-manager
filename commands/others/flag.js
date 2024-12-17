@@ -106,7 +106,6 @@ module.exports = {
                 logger.info(`Error fetching ${changePath} SHA:\n${error}`);
                 erroredRecords.push(`All from ${changePath}`);
                 return await interaction.editReply(`:x: Couldn't fetch data from ${changePath}`);
-                i++;
                 
             }
             try {
@@ -116,7 +115,7 @@ module.exports = {
                     path: githubDataPath + `/_flags.json`,
                     branch: githubBranch,
                     message: `Set ${username}'s flag (${interaction.user.tag})`,
-                    content: Buffer.from(JSON.stringify(parsedData)).toString('base64'),
+                    content: JSON.stringify(parsedData, null, "\t"),
                     sha: fileSha
                 });
             } catch (updateError) {
@@ -175,7 +174,7 @@ module.exports = {
                     path: githubDataPath + `/_flags.json`,
                     branch: githubBranch,
                     message: `Delete ${username}'s flag (${interaction.user.tag})`,
-                    content: Buffer.from(JSON.stringify(parsedData)).toString('base64'),
+                    content: JSON.stringify(parsedData, null, "\t"),
                     sha: fileSha
                 });
             } catch (updateError) {
