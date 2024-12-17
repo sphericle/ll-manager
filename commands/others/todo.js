@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
-	enabled: true,
+	enabled: false,
 	data: new SlashCommandBuilder()
 		.setName('todo')
 		.setDescription('Todo list for the bot'),

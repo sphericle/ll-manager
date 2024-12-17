@@ -896,21 +896,32 @@ module.exports = {
 			const { cache, octokit } = require('../../index.js');
 			const levelname = await interaction.options.getString('levelname');
 			const levelToDelete = await cache.levels.findOne({ where: { name: levelname } });
-			
 
-			const list = JSON.parse(Buffer.from((await octokit.rest.repos.getContent({
-				owner: githubOwner,
-				repo: githubRepo,
-				path: githubDataPath + `/_list.json`,
-				branch: githubBranch,
-			})).data.content, 'base64').toString('utf-8'));
+			
+			if (!levelToDelete) return await interaction.editReply(":x: Could not find a level with that name, make sure you pick an given option!")
+			let list;
+			try {
+				list = JSON.parse(Buffer.from((await octokit.rest.repos.getContent({
+					owner: githubOwner,
+					repo: githubRepo,
+					path: githubDataPath + `/_list.json`,
+					branch: githubBranch,
+				})).data.content, 'base64').toString('utf-8'));
+			} catch (e) {
+				return await interaction.editReply(`:x: Failed to fetch _list.json: ${e}`)
+			}
 
 			index = list.findIndex(level => level === levelToDelete.filename);
-			logger.log(index)
+
+			if (index === -1) return await interaction.editReply(":x: Error removing this level: the filename was not found in _list.json")
+
 			list.splice(index, 1);
 
-			cache.levels.destroy({ where: { filename: levelToDelete.filename } });
-
+			try {
+				cache.levels.destroy({ where: { filename: levelToDelete.filename } });
+			} catch (e) {
+				return await interaction.editReply(`:x: Error removing level from database: ${e}`)
+			}
 
 			const filename = levelToDelete.filename;
 			const changes = [
