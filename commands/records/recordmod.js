@@ -1633,7 +1633,7 @@ module.exports = {
 				return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (updateRefError)');
 			}
 			logger.info(`Successfully created commit on ${githubBranch} (record update): ${newCommit.data.sha}`);
-			return await interaction.editReply("This record has been added!");
+			return await interaction.editReply("This record has been updated!");
 		}
 	},
 };
