@@ -25,10 +25,10 @@
 	"pendingRecordsID" : "988671478096609290",
 	"priorityRecordsID" : "988671478096609290",
 
-	"acceptedRecordsID" : "1261042731807936575",
-	"deniedRecordsID" : "1261042731807936575",
-	"archiveRecordsID" : "0",
-	"recordsID" : "1261042731807936575",
+	"acceptedRecordsID" : "0",
+	"deniedRecordsID" : "0",
+	"archiveRecordsID" : "1261042731807936575",
+	"recordsID" : "0",
 
 	"changelogID" : "988671478096609290",
 	"changelogRoleID": "1178255860972142662",

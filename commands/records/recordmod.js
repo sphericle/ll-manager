@@ -195,7 +195,22 @@ module.exports = {
 				.addStringOption(option =>
 					option.setName('additionalnotes')
 						.setDescription('Any other info you\'d like to share with us (Optional)')
-						.setMaxLength(1024))),
+						.setMaxLength(1024)))
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('reorder')
+				.setDescription('Shift the order of a record on a level')
+				.addStringOption(option =>
+					option.setName('levelname')
+						.setDescription('The level the record is on')
+						.setRequired(true)
+						.setAutocomplete(true))
+				.addStringOption(option =>
+					option.setName('username')
+						.setDescription('The record holder you want to reorder')
+						.setRequired(true)
+						.setAutocomplete(true))
+		),
 	async autocomplete(interaction) {
 		const focused = interaction.options.getFocused(true);
 
@@ -271,7 +286,7 @@ module.exports = {
 			const level = await cache.levels.findOne({ where: { name: [interaction.options.getString('levelname')] } });
 
 
-			await interaction.editReply(`Matched level ${level.filename}`);
+			await interaction.editReply(`Writing to DB...`);
 			let record;
 			try {
 				const recordEntry = await db.acceptedRecords.create({
@@ -305,7 +320,7 @@ module.exports = {
 				await createUser(interaction, [record.username]);
 			}
 
-			await interaction.editReply(`Matched user ${user.name}`);
+			await interaction.editReply(`Writing code...`);
 			// Create embed to send with github code
 			const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${record.completionlink}",\n\t\t"percent": ${record.percent},\n\t\t"hz": ${record.fps}` + (record.enjoyment !== null ? `,\n\t\t"enjoyment": ${record.enjoyment}` : '') + (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
 
@@ -333,15 +348,15 @@ module.exports = {
 				.setColor(0x8fce00)
 				.setTitle(`:white_check_mark: ${record.levelname}`)
 				.addFields(
-					{ name: 'Record submitted by', value: `<@${record.submitter}>`, inline: true },
+					{ name: 'Percent', value: `${record.percent}%`, inline: true },
 					{ name: 'Record holder', value: `${record.username}`, inline: true },
-					{ name: 'Record accepted by', value: `${interaction.user}` },
+					{ name: 'Record added by', value: `${interaction.user}`, inline: true },
 					{ name: 'Device', value: `${record.device}`, inline: true },
-					{ name: 'LDM', value: `${(record.ldm == 0 ? 'None' : record.ldm)}`, inline: true },
-					{ name: 'Completion link', value: `${record.completionlink}` },
-					{ name: 'Raw link', value: `${(record.raw == '' ? 'None' : record.raw)}` },
-					{ name: 'Mod menu', value: `${record.modMenu}` },
-					{ name: 'Additional Info', value: `${(record.additionalnotes == '' ? 'None' : record.additionalnotes)}` },
+					{ name: 'Link', value: `${record.completionlink}`, inline: true },
+					{ name: 'Raw link', value: `${(!record.raw || record.raw == '' ? 'None' : record.raw)}`, inline: true },
+					{ name: 'Enjoyment', value: `${(record.enjoyment) || "None"}`, inline: true },
+					{ name: 'FPS', value: `${record.fps}`, inline: true },
+					{ name: 'Additional Info', value: `${(!record.additionalnotes || record.additionalnotes == '' ? 'None' : record.additionalnotes)}`, inline: true },
 				)
 				.setTimestamp();
 
@@ -568,7 +583,7 @@ module.exports = {
 				const guild = await interaction.client.guilds.fetch(guildId);
 				const staffGuild = (enableSeparateStaffServer ? await interaction.client.guilds.fetch(staffGuildId) : guild);
 
-				staffGuild.channels.cache.get(acceptedRecordsID).send({ content: '', embeds: [acceptEmbed], components: [row] });
+				// staffGuild.channels.cache.get(acceptedRecordsID).send({ content: '', embeds: [acceptEmbed], components: [row] });
 				staffGuild.channels.cache.get(archiveRecordsID).send({ embeds: [archiveEmbed] });
 
 				// Check if we need to send in dms as well
@@ -668,26 +683,6 @@ module.exports = {
 				return await interaction.editReply(':x: Choose a different level! That\'s the point of the command lmao????');
 			}
 
-			
-			const recordEntry = await db.acceptedRecords.create({
-				username: oldRecord.username,
-				submitter: interaction.user.id, // always equal to moderator
-				levelname: newLevel,
-				device: newDevice,
-				completionlink: oldRecord.completionlink,
-				enjoyment: newEnjoyment,
-				fps: newFPS,
-				percent: newPercent,
-				raw: newRaw,
-				ldm: oldRecord.ldm, // always 0
-				additionalnotes: newNotes,
-				priority: oldRecord.priority, // always false
-				modMenu: newModMenu,
-				moderator: interaction.user.id, // always equal to submitter
-			});
-
-			const record = recordEntry.dataValues;
-
 			// add record to list
 			await interaction.editReply(`Adding record...`);
 			const { cache } = require('../../index.js');
@@ -728,6 +723,32 @@ module.exports = {
 
 			const level = await cache.levels.findOne({ where: { name: [newLevel] } });
 
+			await interaction.editReply("Writing record to DB...")
+			let record;
+			try {
+				const recordEntry = await db.acceptedRecords.create({
+					username: oldRecord.username,
+					submitter: interaction.user.id, // always equal to moderator
+					levelname: newLevel,
+					device: newDevice,
+					completionlink: oldRecord.completionlink,
+					enjoyment: newEnjoyment,
+					fps: newFPS,
+					percent: newPercent,
+					raw: newRaw,
+					ldm: oldRecord.ldm, // always 0
+					additionalnotes: newNotes,
+					priority: oldRecord.priority, // always false
+					modMenu: newModMenu,
+					moderator: interaction.user.id, // always equal to submitter
+				});
+
+				record = recordEntry.dataValues;
+			} catch (e) {
+				logger.log(`Error while adding the record to the database: ${e}`)
+				return await interaction.editReply(`:x: Error while adding the record to the database: ${e}`)
+			}
+
 
 			await interaction.editReply(`Matched level ${level.filename}`);
 
@@ -739,7 +760,7 @@ module.exports = {
 			const user = await cache.users.findOne({ where: { name: record.username } });
 			if (!user) return await interaction.editReply(':x: Couldn\'t find the user this record was submitted for (their name might have changed since they submitted it)');
 
-			await interaction.editReply(`Matched user ${user.name}`);
+			await interaction.editReply(`Writing code...`);
 			// Create embed to send with github code
 			const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${record.completionlink}",\n\t\t"percent": ${record.percent},\n\t\t"hz": ${record.fps}` + (record.enjoyment !== -1 || null ? `,\n\t\t"enjoyment": ${record.enjoyment}` : '') + (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
 
@@ -767,15 +788,15 @@ module.exports = {
 				.setColor(0x8fce00)
 				.setTitle(`:white_check_mark: ${record.levelname}`)
 				.addFields(
-					{ name: 'Record submitted by', value: `<@${record.submitter}>`, inline: true },
+					{ name: 'Percent', value: `${record.percent}%`, inline: true },
 					{ name: 'Record holder', value: `${record.username}`, inline: true },
-					{ name: 'Record accepted by', value: `${interaction.user}` },
+					{ name: 'Record added by', value: `${interaction.user}`, inline: true },
 					{ name: 'Device', value: `${record.device}`, inline: true },
-					{ name: 'LDM', value: `${(record.ldm == 0 ? 'None' : record.ldm)}`, inline: true },
-					{ name: 'Completion link', value: `${record.completionlink}` },
-					{ name: 'Raw link', value: `${(record.raw == '' ? 'None' : record.raw)}` },
-					{ name: 'Mod menu', value: `${record.modMenu}` },
-					{ name: 'Additional Info', value: `${(record.additionalnotes == '' ? 'None' : record.additionalnotes)}` },
+					{ name: 'Link', value: `${record.completionlink}`, inline: true },
+					{ name: 'Raw link', value: `${(!record.raw || record.raw == '' ? 'None' : record.raw)}`, inline: true },
+					{ name: 'Enjoyment', value: `${(record.enjoyment) || "None"}`, inline: true },
+					{ name: 'FPS', value: `${record.fps}`, inline: true },
+					{ name: 'Additional Info', value: `${(!record.additionalnotes || record.additionalnotes == '' ? 'None' : record.additionalnotes)}`, inline: true },
 				)
 				.setTimestamp();
 
@@ -1634,6 +1655,9 @@ module.exports = {
 			}
 			logger.info(`Successfully created commit on ${githubBranch} (record update): ${newCommit.data.sha}`);
 			return await interaction.editReply("This record has been updated!");
+		} else if (interaction.options.getSubcommand() === 'reorder') {
+			const levelname = interaction.options.getString("levelname");
+			return await interaction.editReply("Not implemented yet");
 		}
 	},
 };
