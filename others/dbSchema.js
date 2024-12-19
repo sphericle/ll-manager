@@ -185,7 +185,6 @@ module.exports = {
 			name: Sequelize.STRING,
 			position: Sequelize.INTEGER,
 			filename: Sequelize.STRING,
-			author: Sequelize.STRING,
 		});
 
 		cache.legacy = sequelize_cache.define('legacy_levels', {
