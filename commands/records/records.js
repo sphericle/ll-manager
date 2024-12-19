@@ -275,10 +275,10 @@ async function createUser(interaction, user) {
 
 module.exports = {
 	cooldown: 5,
-	enabled: true,
+	enabled: false,
 	createUser,
 	data: new SlashCommandBuilder()
-		.setName('record')
+		.setName('oldrecords')
 		.setDescription('Record handling')
 		.setDMPermission(false)
 		.addSubcommand(subcommand =>

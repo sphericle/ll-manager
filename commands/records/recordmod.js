@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 const Sequelize = require('sequelize');
 const isUrlHttp = require('is-url-http');
-const { archiveRecordsID, acceptedRecordsID, recordsID, pendingRecordsID, priorityRoleID, priorityRecordsID, submissionLockRoleID, enableSeparateStaffServer, enablePriorityRole, staffGuildId, guildId, githubOwner, githubRepo, githubDataPath, githubBranch } = require('../../config.json');
+const { archiveRecordsID, acceptedRecordsID, priorityRoleID, submissionLockRoleID, enableSeparateStaffServer, enablePriorityRole, staffGuildId, guildId, githubOwner, githubRepo, githubDataPath, githubBranch } = require('../../config.json');
 const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
 const logger = require('log4js').getLogger();
 const { octokit } = require('../../index.js');
@@ -10,7 +10,7 @@ const { createUser } = require('./records.js');
 module.exports = {
 	enabled: true,
 	data: new SlashCommandBuilder()
-		.setName('recordmod')
+		.setName('record')
 		.setDescription('Staff record moderator commands')
 		.setDMPermission(true)
 		.addSubcommand(subcommand =>
@@ -225,7 +225,7 @@ module.exports = {
 			});
 
 			await interaction.respond(
-				levels.slice(0, 25).map(level => ({ name: `#${level.position} ${level.name}`, value: level.name })),
+				levels.slice(0, 25).map(level => ({ name: `#${level.position} - ${level.name}`, value: level.name })),
 			);
 		} else if (focused.name === 'username' || focused.name === 'newuser') {
 			let users = await cache.users.findAll({
@@ -324,24 +324,9 @@ module.exports = {
 			// Create embed to send with github code
 			const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${record.completionlink}",\n\t\t"percent": ${record.percent},\n\t\t"hz": ${record.fps}` + (record.enjoyment !== null ? `,\n\t\t"enjoyment": ${record.enjoyment}` : '') + (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
 
-			const acceptEmbed = new EmbedBuilder()
-				.setColor(0x8fce00)
-				.setTitle(`:white_check_mark: ${record.levelname}`)
-				.addFields(
-					{ name: 'Record accepted by', value: `${interaction.user}`, inline: true },
-					{ name: 'Record holder', value: `${record.username}`, inline: true },
-					{ name: 'Github code', value: `\`\`\`json\n${githubCode}\n\`\`\`` },
-				)
-				.setTimestamp();
 
 			// Create button to remove the message
-			const remove = new ButtonBuilder()
-				.setCustomId('removeMsg')
-				.setLabel('Delete message')
-				.setStyle(ButtonStyle.Danger);
 
-			const row = new ActionRowBuilder()
-				.addComponents(remove);
 
 			// Create embed to send in archive with all record info
 			const archiveEmbed = new EmbedBuilder()
@@ -361,14 +346,6 @@ module.exports = {
 				.setTimestamp();
 
 			// Create embed to send in public channel
-			const publicEmbed = new EmbedBuilder()
-				.setColor(0x8fce00)
-				.setTitle(`:white_check_mark:  ${record.levelname} `)
-				.setDescription('Accepted\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800')
-				.addFields(
-					{ name: 'Record holder', value: `${record.username}`, inline: true },
-					{ name: 'Device', value: `${record.device}`, inline: true },
-				);
 
 			logger.info(`${interaction.user.tag} (${interaction.user.id}) accepted record of ${record.levelname} for ${record.username} submitted by ${record.submitter}`);
 
@@ -390,6 +367,7 @@ module.exports = {
 
 			let parsedData;
 			try {
+				// eslint-disable-next-line no-undef
 				parsedData = JSON.parse(Buffer.from(fileResponse.data.content, 'base64').toString('utf-8'));
 			} catch (parseError) {
 				logger.info(`Unable to parse data fetched from ${filename}:\n${parseError}`);
@@ -565,16 +543,6 @@ module.exports = {
 					let detailedErrors = '';
 					for (const err of erroredRecords) detailedErrors += `\n${err}`;
 
-					const replyEmbed = new EmbedBuilder()
-						.setColor(0x8fce00)
-						.setTitle(':white_check_mark: Commit successful')
-						.setDescription(`Successfully updated ${updatedFiles}/ files`)
-						.addFields(
-							{ name: 'Duplicates found:', value: `**${duplicateRecords}**`, inline: true },
-							{ name: 'Errors:', value: `${erroredRecords.length}`, inline: true },
-							{ name: 'Detailed Errors:', value: (detailedErrors.length == 0 ? 'None' : detailedErrors) },
-						)
-						.setTimestamp();
 					await interaction.message.delete();
 					await interaction.editReply(':white_check_mark: The record has been accepted');
 				}
@@ -801,14 +769,6 @@ module.exports = {
 				.setTimestamp();
 
 			// Create embed to send in public channel
-			const publicEmbed = new EmbedBuilder()
-				.setColor(0x8fce00)
-				.setTitle(`:white_check_mark:  ${record.levelname} `)
-				.setDescription('Accepted\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800')
-				.addFields(
-					{ name: 'Record holder', value: `${record.username}`, inline: true },
-					{ name: 'Device', value: `${record.device}`, inline: true },
-				);
 
 			logger.info(`${interaction.user.tag} (${interaction.user.id}) accepted record of ${record.levelname} for ${record.username} submitted by ${record.submitter}`);
 
@@ -830,6 +790,7 @@ module.exports = {
 
 			let parsedData;
 			try {
+				// eslint-disable-next-line no-undef
 				parsedData = JSON.parse(Buffer.from(fileResponse.data.content, 'base64').toString('utf-8'));
 			} catch (parseError) {
 				logger.info(`Unable to parse data fetched from ${filename}:\n${parseError}`);
@@ -1008,16 +969,6 @@ module.exports = {
 					let detailedErrors = '';
 					for (const err of erroredRecords) detailedErrors += `\n${err}`;
 
-					const replyEmbed = new EmbedBuilder()
-						.setColor(0x8fce00)
-						.setTitle(':white_check_mark: Commit successful')
-						.setDescription(`Successfully updated ${updatedFiles}/ files`)
-						.addFields(
-							{ name: 'Duplicates found:', value: `**${duplicateRecords}**`, inline: true },
-							{ name: 'Errors:', value: `${erroredRecords.length}`, inline: true },
-							{ name: 'Detailed Errors:', value: (detailedErrors.length == 0 ? 'None' : detailedErrors) },
-						)
-						.setTimestamp();
 					await interaction.message.delete();
 					await interaction.editReply(':white_check_mark: The record has been accepted');
 				}
@@ -1383,7 +1334,6 @@ module.exports = {
 			const recordIndex = parsedData.records.findIndex((record) => record.user === username);
 			if (recordIndex === -1) return await interaction.editReply(`:x: Couldn't find a record with the username \`${username}\``);
 
-			const record = parsedData.records[recordIndex];
 
 			parsedData.records.splice(recordIndex, 1);
 
@@ -1656,7 +1606,6 @@ module.exports = {
 			logger.info(`Successfully created commit on ${githubBranch} (record update): ${newCommit.data.sha}`);
 			return await interaction.editReply("This record has been updated!");
 		} else if (interaction.options.getSubcommand() === 'reorder') {
-			const levelname = interaction.options.getString("levelname");
 			return await interaction.editReply("Not implemented yet");
 		}
 	},

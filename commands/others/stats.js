@@ -8,7 +8,7 @@ const logger = require('log4js').getLogger();
 
 module.exports = {
 	cooldown: 5,
-	enabled: true,
+	enabled: false,
 	data: new SlashCommandBuilder()
 		.setName('stats')
 		.setDescription('Statistics about the server')

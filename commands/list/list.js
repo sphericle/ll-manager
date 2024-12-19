@@ -124,20 +124,6 @@ module.exports = {
 						.setAutocomplete(true)))
 		.addSubcommand(subcommand =>
 			subcommand
-				.setName('mutualvictors')
-				.setDescription('Finds all victors that have beaten both levels')
-				.addStringOption(option =>
-					option.setName('level1')
-						.setDescription('The name of the first level')
-						.setAutocomplete(true)
-						.setRequired(true))
-				.addStringOption(option =>
-					option.setName('level2')
-						.setDescription('The name of the second level')
-						.setAutocomplete(true)
-						.setRequired(true)))
-		.addSubcommand(subcommand =>
-			subcommand
 				.setName('edit')
 				.setDescription('Edit a level\'s info')
 				.addStringOption(option =>

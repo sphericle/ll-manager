@@ -1,0 +1,54 @@
+[
+    {
+        "name": "List",
+        "id": 1,
+        "discname": "list",
+        "description": "Commands to manage levels on the list.",
+        "subcommands": [
+            {
+                "name": "place",
+                "description": "Place a level on the list"
+            },
+            {
+                "name": "edit",
+                "description": "Edit a level's info on the list"
+            },
+            {
+                "name": "move",
+                "description": "Move a level to a new position"
+            },
+            {
+                "name": "remove",
+                "description": "Remove/hide a level"
+            },
+            {
+                "name": "edit",
+                "description": "Edit a level's info on the list"
+            }
+        ]
+    },
+    {
+        "name": "Records",
+        "id": 1,
+        "discname": "record",
+        "description": "Commands to manage record on the list.",
+        "subcommands": [
+            {
+                "name": "add",
+                "description": "Add a record to a level"
+            },
+            {
+                "name": "addlast",
+                "description": "Adds a record, but reuses the details of the previous record"
+            },
+            {
+                "name": "edit",
+                "description": "Edit a record's info"
+            },
+            {
+                "name": "delete",
+                "description": "Delete a record"
+            }
+        ]
+    }
+]
