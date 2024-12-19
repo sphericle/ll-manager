@@ -6,6 +6,7 @@ const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
 const logger = require('log4js').getLogger();
 const { octokit } = require('../../index.js');
 const { createUser } = require('./records.js');
+const { parseUsers } = require('../../others/gitUtils.js')
 
 module.exports = {
 	enabled: true,
@@ -209,8 +210,11 @@ module.exports = {
 					option.setName('username')
 						.setDescription('The record holder you want to reorder')
 						.setRequired(true)
-						.setAutocomplete(true))
-		),
+						.setAutocomplete(true)))
+		.addSubcommand(subcommand =>
+			subcommand
+				.setName('updateusers')
+				.setDescription('Syncs all the users in the list with the cache')),
 	async autocomplete(interaction) {
 		const focused = interaction.options.getFocused(true);
 
@@ -503,8 +507,6 @@ module.exports = {
 					logger.info(`Successfully created commit on ${githubBranch} (record addition): ${newCommit.data.sha}`);
 					await interaction.editReply("This record has been added!");
 				} else {
-					let updatedFiles = 0;
-					let i = 1;
 					// Get file SHA
 					let fileSha;
 					try {
@@ -516,9 +518,7 @@ module.exports = {
 						fileSha = response.data.sha;
 					} catch (error) {
 						logger.info(`Error fetching ${changePath} SHA:\n${error}`);
-						erroredRecords.push(`All from ${changePath}`);
 						return await interaction.editReply(`:x: Couldn't fetch data from ${changePath}`);
-						i++;
 
 					}
 
@@ -534,14 +534,8 @@ module.exports = {
 						logger.info(`Updated ${changePath} (${interaction.user.tag}`);
 					} catch (error) {
 						logger.info(`Failed to update ${changePath} (${interaction.user.tag}):\n${error}`);
-						erroredRecords.push(`All from ${changePath}`);
 						await interaction.editReply(`:x: Couldn't update the file ${changePath}, skipping...`);
 					}
-					updatedFiles++;
-					i++;
-
-					let detailedErrors = '';
-					for (const err of erroredRecords) detailedErrors += `\n${err}`;
 
 					await interaction.message.delete();
 					await interaction.editReply(':white_check_mark: The record has been accepted');
@@ -930,8 +924,6 @@ module.exports = {
 					logger.info(`Successfully created commit on ${githubBranch} (record addition): ${newCommit.data.sha}`);
 					await interaction.editReply("This record has been added!");
 				} else {
-					let updatedFiles = 0;
-					let i = 1;
 					// Get file SHA
 					let fileSha;
 					try {
@@ -943,7 +935,6 @@ module.exports = {
 						fileSha = response.data.sha;
 					} catch (error) {
 						logger.info(`Error fetching ${changePath} SHA:\n${error}`);
-						erroredRecords.push(`All from ${changePath}`);
 						return await interaction.editReply(`:x: Couldn't fetch data from ${changePath}`);
 
 					}
@@ -960,14 +951,8 @@ module.exports = {
 						logger.info(`Updated ${changePath} (${interaction.user.tag}`);
 					} catch (error) {
 						logger.info(`Failed to update ${changePath} (${interaction.user.tag}):\n${error}`);
-						erroredRecords.push(`All from ${changePath}`);
 						await interaction.editReply(`:x: Couldn't update the file ${changePath}, skipping...`);
 					}
-					updatedFiles++;
-					i++;
-
-					let detailedErrors = '';
-					for (const err of erroredRecords) detailedErrors += `\n${err}`;
 
 					await interaction.message.delete();
 					await interaction.editReply(':white_check_mark: The record has been accepted');
@@ -1300,7 +1285,7 @@ module.exports = {
 		} else if (interaction.options.getSubcommand() === 'delete') {
 			await interaction.deferReply({ ephemeral: true });
 			const { cache, octokit } = require('../../index.js');
-			level = await cache.levels.findOne({ where: { name: interaction.options.getString('levelname') } });
+			const level = await cache.levels.findOne({ where: { name: interaction.options.getString('levelname') } });
 			const username = interaction.options.getString('username');
 
 			if (!level) return await interaction.editReply(':x: Couldn\'t find the level');
@@ -1432,8 +1417,6 @@ module.exports = {
 				logger.info(`Successfully created commit on ${githubBranch} (record addition): ${newCommit.data.sha}`);
 				await interaction.editReply("This record has been removed!");
 			} else {
-				let updatedFiles = 0;
-				let i = 1;
 				// Get file SHA
 				let fileSha;
 				try {
@@ -1445,9 +1428,7 @@ module.exports = {
 					fileSha = response.data.sha;
 				} catch (error) {
 					logger.info(`Error fetching ${changePath} SHA:\n${error}`);
-					erroredRecords.push(`All from ${changePath}`);
 					return await interaction.editReply(`:x: Couldn't fetch data from ${changePath}`);
-					i++;
 
 				}
 
@@ -1463,15 +1444,12 @@ module.exports = {
 					logger.info(`Updated ${changePath} (${interaction.user.tag}`);
 				} catch (error) {
 					logger.info(`Failed to update ${changePath} (${interaction.user.tag}):\n${error}`);
-					erroredRecords.push(`All from ${changePath}`);
 					await interaction.editReply(`:x: Couldn't update the file ${changePath}, skipping...`);
 				}
-				updatedFiles++;
-				i++;
 			}
 		} else if (interaction.options.getSubcommand() === 'edit') {
 			await interaction.deferReply({ ephemeral: true });
-			const { octokit, db, cache } = require('../../index.js');
+			const { octokit, cache } = require('../../index.js');
 			const levelname = interaction.options.getString('levelname');
 			const olduser = interaction.options.getString('username');
 
@@ -1506,7 +1484,7 @@ module.exports = {
 			}
 
 			const recordIndex = parsedData.records.findIndex((record) => record.user === olduser);
-			if (recordIndex === -1) return await interaction.editReply(`:x: Couldn't find a record with the username \`${username}\``);
+			if (recordIndex === -1) return await interaction.editReply(`:x: Couldn't find a record with the username \`${olduser}\``);
 
 			const newuser = interaction.options.getString('newuser') || null;
 			const fps = interaction.options.getInteger('fps') || null;
@@ -1607,6 +1585,29 @@ module.exports = {
 			return await interaction.editReply("This record has been updated!");
 		} else if (interaction.options.getSubcommand() === 'reorder') {
 			return await interaction.editReply("Not implemented yet");
+		} else if (interaction.options.getSubcommand() === 'updateusers') {
+			await interaction.deferReply({ ephemeral: true });
+			const { cache } = require('../../index.js');
+			const users = await parseUsers();
+			if (users.length > 0) {
+				logger.info('Parsing users...');
+				await cache.users.destroy({ where: {} });
+				try {
+					await cache.users.bulkCreate(users);
+					logger.info(`Successfully updated ${users.length} cached users.`);
+				} catch (error) {
+					logger.error(`Couldn't update cached users, something went wrong with sequelize: ${error}`);
+				}
+
+				try {
+					await createUser('_', users);
+					interaction.editReply(`:white_check_mark: Added ${users.length} users.`);
+				} catch (error) {
+					logger.error(`Couldn't add users, something went wrong with sequelize: ${error}`);
+				}
+			} else {
+				interaction.editReply(":x: No users to update.");
+			}
 		}
 	},
 };

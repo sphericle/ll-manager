@@ -2,6 +2,7 @@ const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, Embed
 const { pendingRecordsID, priorityRoleID, priorityRecordsID, submissionLockRoleID, enableSeparateStaffServer, enablePriorityRole, staffGuildId, guildId } = require('../../config.json');
 const isUrlHttp = require('is-url-http');
 const logger = require('log4js').getLogger();
+const { parseUsers } = require('../../others/gitUtils.js')
 
 async function createUser(interaction, user) {
 	// Create a new user //

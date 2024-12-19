@@ -103,9 +103,8 @@ module.exports = {
                 });
                 fileSha = response.data.sha;
             } catch (error) {
-                logger.info(`Error fetching ${changePath} SHA:\n${error}`);
-                erroredRecords.push(`All from ${changePath}`);
-                return await interaction.editReply(`:x: Couldn't fetch data from ${changePath}`);
+                logger.info(`Error fetching _flags.json SHA:\n${error}`);
+                return await interaction.editReply(`:x: Couldn't fetch data from _flags.json`);
                 
             }
             try {
@@ -161,10 +160,8 @@ module.exports = {
                 });
                 fileSha = response.data.sha;
             } catch (error) {
-                logger.info(`Error fetching ${changePath} SHA:\n${error}`);
-                erroredRecords.push(`All from ${changePath}`);
-                return await interaction.editReply(`:x: Couldn't fetch data from ${changePath}`);
-                i++;
+                logger.info(`Error fetching _flags.json SHA:\n${error}`);
+                return await interaction.editReply(`:x: Couldn't fetch data from _flags.json`);
 
             }
             try {

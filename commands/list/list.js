@@ -221,7 +221,6 @@ module.exports = {
 			await interaction.editReply('Placing level...');
 
 			const { db, cache } = require('../../index.js');
-			const { Op } = require('sequelize');
 
 			const levelname = interaction.options.getString('levelname');
 			const position = interaction.options.getInteger('position');
@@ -443,8 +442,6 @@ module.exports = {
 				logger.info(`Successfully created commit on ${githubBranch} (record addition): ${newCommit.data.sha}`);
 				await interaction.editReply("This record has been added!");
 			} else {
-				let updatedFiles = 0;
-				let i = 1;
 				// Get file SHA
 				let fileSha;
 				try {
@@ -456,9 +453,7 @@ module.exports = {
 					fileSha = response.data.sha;
 				} catch (error) {
 					logger.info(`Error fetching ${changePath} SHA:\n${error}`);
-					erroredRecords.push(`All from ${changePath}`);
 					return await interaction.editReply(`:x: Couldn't fetch data from ${changePath}`);
-					i++;
 
 				}
 
@@ -474,25 +469,9 @@ module.exports = {
 					logger.info(`Updated ${changePath} (${interaction.user.tag}`);
 				} catch (error) {
 					logger.info(`Failed to update ${changePath} (${interaction.user.tag}):\n${error}`);
-					erroredRecords.push(`All from ${changePath}`);
 					await interaction.editReply(`:x: Couldn't update the file ${changePath}, skipping...`);
 				}
-				updatedFiles++;
-				i++;
 
-				let detailedErrors = '';
-				for (const err of erroredRecords) detailedErrors += `\n${err}`;
-
-				const replyEmbed = new EmbedBuilder()
-					.setColor(0x8fce00)
-					.setTitle(':white_check_mark: Commit successful')
-					.setDescription(`Successfully updated ${updatedFiles}/ files`)
-					.addFields(
-						{ name: 'Duplicates found:', value: `**${duplicateRecords}**`, inline: true },
-						{ name: 'Errors:', value: `${erroredRecords.length}`, inline: true },
-						{ name: 'Detailed Errors:', value: (detailedErrors.length == 0 ? 'None' : detailedErrors) },
-					)
-					.setTimestamp();
 				await interaction.message.delete();
 				await interaction.editReply(':white_check_mark: The record has been accepted');
 			}
@@ -698,7 +677,7 @@ module.exports = {
 					edited = true;
 				}
 
-				for (const creator of parsedData.creators) {
+				for (let creator of parsedData.creators) {
 					if (creator === olduser) {
 						creator = newuser;
 						edited = true;
@@ -825,7 +804,7 @@ module.exports = {
 			return await interaction.editReply(`:white_check_mark: Successfully renamed **${olduser}** to **${newuser}**`);
 		} else if (interaction.options.getSubcommand() === 'mutualvictors') {
 			const { cache, octokit } = require('../../index.js');
-			const { Op, Sequelize } = require('sequelize');
+			const { Op } = require('sequelize');
 
 			const level1 = interaction.options.getString('level1');
 			const level2 = interaction.options.getString('level2');
@@ -897,7 +876,7 @@ module.exports = {
 				return await interaction.editReply(`:x: Failed to fetch _list.json: ${e}`)
 			}
 
-			index = list.findIndex(level => level === levelToDelete.filename);
+			const index = list.findIndex(level => level === levelToDelete.filename);
 
 			if (index === -1) return await interaction.editReply(":x: Error removing this level: the filename was not found in _list.json")
 
