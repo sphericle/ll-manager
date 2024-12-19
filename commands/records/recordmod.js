@@ -225,7 +225,7 @@ module.exports = {
 			});
 
 			await interaction.respond(
-				levels.slice(0, 25).map(level => ({ name: level.name, value: level.name })),
+				levels.slice(0, 25).map(level => ({ name: `#${level.position} ${level.name}`, value: level.name })),
 			);
 		} else if (focused.name === 'username' || focused.name === 'newuser') {
 			let users = await cache.users.findAll({
