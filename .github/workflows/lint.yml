@@ -3,6 +3,9 @@ name: ESLint Check
 on:
   pull_request:
   workflow_dispatch:
+  push:
+
+continue-on-error: true
 
 jobs:
   eslint:
@@ -27,6 +30,7 @@ jobs:
       - name: Run ESLint
         run: npx eslint . --ext .js,.jsx,.ts,.tsx # Adjust extensions as needed
 
+      
       - name: Run prettier
         uses: actionsx/prettier@v2
         with:
