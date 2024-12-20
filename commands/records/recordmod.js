@@ -401,6 +401,7 @@ module.exports = {
 						updated = true;
 					} else {
 						logger.info(`Canceled adding duplicated record of ${filename} for ${record.username}`);
+						// TODO: this doesnt work
 						await db.acceptedRecords.destroy({ where: { id: record.dataValues['id'] } });
 						existing = true;
 					}
@@ -595,7 +596,7 @@ module.exports = {
 			}
 
 			logger.info(`${interaction.user.tag} (${interaction.user.id}) submitted ${record.levelname} for ${interaction.options.getString('username')}`);
-			// Reply
+			// todo: get value from record object
 			return await interaction.editReply((enablePriorityRole && interaction.member.roles.cache.has(priorityRoleID) ? `:white_check_mark: The priority record for ${interaction.options.getString('levelname')} has been submitted successfully` : `:white_check_mark: The record for ${record.levelname} has been added successfully`));
 
 		} else if (interaction.options.getSubcommand() === 'addlast') {
@@ -674,11 +675,13 @@ module.exports = {
 
 			// Check enjoyment bounds (1-10)
 			await interaction.editReply("Checking if the enjoyment is valid...")
+			// why is this a new variable lol
 			const enjoyment = newEnjoyment;
 			if (enjoyment && (enjoyment < 1 || enjoyment > 10)) return await interaction.editReply(':x: Couldn\'t add the record: Enjoyment rating must be between 1 and 10');
 
 			// Check percent bounds (0-100)
 			await interaction.editReply("Checking if the percent is valid...")
+			// same here
 			const percent = newPercent;
 			if (percent < 0 || percent > 100) return await interaction.editReply(':x: Couldn\'t add the record: Percent must be valid (1-100)');
 
@@ -794,15 +797,12 @@ module.exports = {
 						updated = true;
 					} else {
 						logger.info(`Canceled adding duplicated record of ${filename} for ${record.username}`);
+						// todo: what the flip
 						await db.acceptedRecords.destroy({ where: { id: record.dataValues['id'] } });
 						existing = true;
 					}
 				}
 			}
-
-			// DEBUG
-			existing = false;
-			updated = false;
 
 			// if the record does not already exist or existed but has been updated
 			if (existing === false || updated === true) {
@@ -988,9 +988,8 @@ module.exports = {
 			} else {
 				return await interaction.editReply(`:x: This user already has a record on this level!`);
 			}
-
+// todo: dont use interaction option
 			logger.info(`${interaction.user.tag} (${interaction.user.id}) submitted ${interaction.options.getString('levelname')} for ${interaction.options.getString('username')}`);
-			// Reply
 			return await interaction.editReply((enablePriorityRole && interaction.member.roles.cache.has(priorityRoleID) ? `:white_check_mark: The priority record for ${interaction.options.getString('levelname')} has been submitted successfully` : `:white_check_mark: The record for ${level.name} has been added successfully`));
 
 		} else if (interaction.options.getSubcommand() === 'stats') {
