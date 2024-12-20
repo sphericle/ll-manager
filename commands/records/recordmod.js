@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 const Sequelize = require('sequelize');
 const isUrlHttp = require('is-url-http');
-const { archiveRecordsID, acceptedRecordsID, priorityRoleID, submissionLockRoleID, enableSeparateStaffServer, enablePriorityRole, staffGuildId, guildId, githubOwner, githubRepo, githubDataPath, githubBranch } = require('../../config.json');
+const { archiveRecordsID, priorityRoleID, submissionLockRoleID, enableSeparateStaffServer, enablePriorityRole, staffGuildId, guildId, githubOwner, githubRepo, githubDataPath, githubBranch } = require('../../config.json');
 const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
 const logger = require('log4js').getLogger();
 const { octokit } = require('../../index.js');
@@ -216,7 +216,7 @@ module.exports = {
 				.setName('updateusers')
 				.setDescription('Syncs all the users in the list with the cache')),
 	async autocomplete(interaction) {
-		const focused = interaction.options.getFocused(true);
+		const focused = await interaction.options.getFocused(true);
 
 		const { cache } = require('../../index.js');
 		const Sequelize = require('sequelize');
@@ -229,7 +229,7 @@ module.exports = {
 			});
 
 			await interaction.respond(
-				levels.slice(0, 25).map(level => ({ name: `#${level.position} - ${level.name}`, value: level.name })),
+				levels.slice(0, 25).map(level => ({ name: `#${level.position} - ${level.name}`, value: level.filename })),
 			);
 		} else if (focused.name === 'username' || focused.name === 'newuser') {
 			let users = await cache.users.findAll({
@@ -287,7 +287,7 @@ module.exports = {
 
 			// Accepting a record //
 
-			const level = await cache.levels.findOne({ where: { name: [interaction.options.getString('levelname')] } });
+			const level = await cache.levels.findOne({ where: { filename: [interaction.options.getString('levelname')] } });
 
 
 			await interaction.editReply(`Writing to DB...`);
@@ -297,6 +297,7 @@ module.exports = {
 					username: interaction.options.getString('username'),
 					submitter: interaction.user.id,
 					levelname: level.name,
+					filename: level.filename,
 					device: interaction.options.getString('device'),
 					fps: interaction.options.getInteger('fps'),
 					enjoyment: interaction.options.getInteger('enjoyment'),
@@ -371,7 +372,6 @@ module.exports = {
 
 			let parsedData;
 			try {
-				// eslint-disable-next-line no-undef
 				parsedData = JSON.parse(Buffer.from(fileResponse.data.content, 'base64').toString('utf-8'));
 			} catch (parseError) {
 				logger.info(`Unable to parse data fetched from ${filename}:\n${parseError}`);
@@ -594,9 +594,9 @@ module.exports = {
 				return await interaction.editReply(`:x: This user already has a record on this level!`);
 			}
 
-			logger.info(`${interaction.user.tag} (${interaction.user.id}) submitted ${interaction.options.getString('levelname')} for ${interaction.options.getString('username')}`);
+			logger.info(`${interaction.user.tag} (${interaction.user.id}) submitted ${record.levelname} for ${interaction.options.getString('username')}`);
 			// Reply
-			await interaction.editReply((enablePriorityRole && interaction.member.roles.cache.has(priorityRoleID) ? `:white_check_mark: The priority record for ${interaction.options.getString('levelname')} has been submitted successfully` : `:white_check_mark: The record for ${interaction.options.getString('levelname')} has been added successfully`));
+			await interaction.editReply((enablePriorityRole && interaction.member.roles.cache.has(priorityRoleID) ? `:white_check_mark: The priority record for ${interaction.options.getString('levelname')} has been submitted successfully` : `:white_check_mark: The record for ${record.levelname} has been added successfully`));
 
 		} else if (interaction.options.getSubcommand() === 'addlast') {
 			
@@ -612,7 +612,7 @@ module.exports = {
 			}
 
 			const oldRecord = lastRow.dataValues;
-
+			
 			let newLevel = interaction.options.getString('levelname');
 			let newPercent = interaction.options.getInteger('percent') || oldRecord.percent;
 			let newEnjoyment = interaction.options.getInteger('enjoyment') || oldRecord.enjoyment;
@@ -628,8 +628,6 @@ module.exports = {
 			newNotes = setNoneToNull(newNotes);
 			newModMenu = setNoneToNull(newModMenu);
 
-			logger.log(newEnjoyment)
-
 			newPercent = (newPercent === -1 ? null : newPercent);
 			newFPS = (newFPS === -1 ? null : newFPS);
 			newEnjoyment = (newEnjoyment === -1 ? null : newEnjoyment);
@@ -641,7 +639,10 @@ module.exports = {
 				}
 				newNotes = interaction.options.getString('notes');
 			}
-			if (newLevel === oldRecord.levelname) {
+
+			const level = await cache.levels.findOne({ where: { filename: [newLevel] } });
+			
+			if (newLevel === oldRecord.filename) {
 				return await interaction.editReply(':x: Choose a different level! That\'s the point of the command lmao????');
 			}
 
@@ -683,15 +684,14 @@ module.exports = {
 
 			// Accepting a record //
 
-			const level = await cache.levels.findOne({ where: { name: [newLevel] } });
-
 			await interaction.editReply("Writing record to DB...")
 			let record;
 			try {
 				const recordEntry = await db.acceptedRecords.create({
 					username: oldRecord.username,
 					submitter: interaction.user.id, // always equal to moderator
-					levelname: newLevel,
+					levelname: level.name,
+					filename: level.filename,
 					device: newDevice,
 					completionlink: oldRecord.completionlink,
 					enjoyment: newEnjoyment,
@@ -725,25 +725,6 @@ module.exports = {
 			await interaction.editReply(`Writing code...`);
 			// Create embed to send with github code
 			const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${record.completionlink}",\n\t\t"percent": ${record.percent},\n\t\t"hz": ${record.fps}` + (record.enjoyment !== -1 || null ? `,\n\t\t"enjoyment": ${record.enjoyment}` : '') + (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
-
-			const acceptEmbed = new EmbedBuilder()
-				.setColor(0x8fce00)
-				.setTitle(`:white_check_mark: ${record.levelname}`)
-				.addFields(
-					{ name: 'Record accepted by', value: `${interaction.user}`, inline: true },
-					{ name: 'Record holder', value: `${record.username}`, inline: true },
-					{ name: 'Github code', value: `\`\`\`json\n${githubCode}\n\`\`\`` },
-				)
-				.setTimestamp();
-
-			// Create button to remove the message
-			const remove = new ButtonBuilder()
-				.setCustomId('removeMsg')
-				.setLabel('Delete message')
-				.setStyle(ButtonStyle.Danger);
-
-			const row = new ActionRowBuilder()
-				.addComponents(remove);
 
 			// Create embed to send in archive with all record info
 			const archiveEmbed = new EmbedBuilder()
@@ -784,7 +765,6 @@ module.exports = {
 
 			let parsedData;
 			try {
-				// eslint-disable-next-line no-undef
 				parsedData = JSON.parse(Buffer.from(fileResponse.data.content, 'base64').toString('utf-8'));
 			} catch (parseError) {
 				logger.info(`Unable to parse data fetched from ${filename}:\n${parseError}`);
@@ -898,7 +878,7 @@ module.exports = {
 						newCommit = await octokit.git.createCommit({
 							owner: githubOwner,
 							repo: githubRepo,
-							message: `Added ${record.username}'s record to ${record.levelname} (${interaction.user.tag})`,
+							message: `Added ${record.username}'s record to ${filename} (${interaction.user.tag})`,
 							tree: newTree.data.sha,
 							parents: [commitSha],
 						});
@@ -962,7 +942,7 @@ module.exports = {
 				const guild = await interaction.client.guilds.fetch(guildId);
 				const staffGuild = (enableSeparateStaffServer ? await interaction.client.guilds.fetch(staffGuildId) : guild);
 
-				staffGuild.channels.cache.get(acceptedRecordsID).send({ content: '', embeds: [acceptEmbed], components: [row] });
+				// staffGuild.channels.cache.get(acceptedRecordsID).send({ content: '', embeds: [acceptEmbed], components: [row] });
 				staffGuild.channels.cache.get(archiveRecordsID).send({ embeds: [archiveEmbed] });
 
 				// Check if we need to send in dms as well
@@ -982,8 +962,8 @@ module.exports = {
 							...(record.device === 'Mobile' && { mobile: true }),
 						}, null, '\t');
 
-						const dmMessage = `Accepted record of ${record.levelname} for ${record.username}\nGithub Code:`;
-						const dmMessage2 = `${rawGithubCode}`;
+						const dmMessage = `Added record of ${record.levelname} for ${record.username}\nGithub Code:`;
+						const dmMessage2 = `\`${rawGithubCode}\``;
 						await interaction.user.send({ content: dmMessage });
 						await interaction.user.send({ content: dmMessage2 });
 					} catch (_) {
@@ -1013,9 +993,7 @@ module.exports = {
 
 			logger.info(`${interaction.user.tag} (${interaction.user.id}) submitted ${interaction.options.getString('levelname')} for ${interaction.options.getString('username')}`);
 			// Reply
-			await interaction.editReply((enablePriorityRole && interaction.member.roles.cache.has(priorityRoleID) ? `:white_check_mark: The priority record for ${interaction.options.getString('levelname')} has been submitted successfully` : `:white_check_mark: The record for ${interaction.options.getString('levelname')} has been added successfully`));
-
-			return await interaction.editReply({ content: `This command is not done yet!`, ephemeral: true });
+			return await interaction.editReply((enablePriorityRole && interaction.member.roles.cache.has(priorityRoleID) ? `:white_check_mark: The priority record for ${interaction.options.getString('levelname')} has been submitted successfully` : `:white_check_mark: The record for ${level.name} has been added successfully`));
 
 		} else if (interaction.options.getSubcommand() === 'stats') {
 
@@ -1285,7 +1263,7 @@ module.exports = {
 		} else if (interaction.options.getSubcommand() === 'delete') {
 			await interaction.deferReply({ ephemeral: true });
 			const { cache, octokit } = require('../../index.js');
-			const level = await cache.levels.findOne({ where: { name: interaction.options.getString('levelname') } });
+			const level = await cache.levels.findOne({ where: { filename: interaction.options.getString('levelname') } });
 			const username = interaction.options.getString('username');
 
 			if (!level) return await interaction.editReply(':x: Couldn\'t find the level');
@@ -1453,7 +1431,7 @@ module.exports = {
 			const levelname = interaction.options.getString('levelname');
 			const olduser = interaction.options.getString('username');
 
-			const level = await cache.levels.findOne({ where: { name: levelname } });
+			const level = await cache.levels.findOne({ where: { filename: levelname } });
 			
 			if (!level) return await interaction.editReply(':x: Couldn\'t find the level');
 			const filename = level.filename

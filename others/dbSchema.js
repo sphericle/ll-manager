@@ -41,6 +41,7 @@ module.exports = {
 			priority: Sequelize.BOOLEAN,
 			modMenu: Sequelize.STRING,
 			moderator: Sequelize.STRING,
+			filename: Sequelize.STRING,
 		});
 		
 		db.deniedRecords = sequelize.define('deniedRecords', {
