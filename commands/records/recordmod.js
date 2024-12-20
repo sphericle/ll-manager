@@ -253,6 +253,22 @@ module.exports = {
 			// Check given level name
 			const { cache } = require('../../index.js');
 
+			const username = await interaction.options.getString('username');
+			const device = await interaction.options.getString('device');
+			const fps = await interaction.options.getInteger('fps');
+			const enjoyment = await interaction.options.getInteger('enjoyment');
+			const percent = await interaction.options.getInteger('percent');
+			const linkStr = interaction.options.getString('completionlink');
+			const note = interaction.options.getString('additionalnotes');
+			const rawStr = interaction.options.getString('raw');
+
+			const level = await cache.levels.findOne({ where: { filename: [interaction.options.getString('levelname')] } });
+			const filename = level.filename
+			// Get cached user
+			const user = await cache.users.findOne({ where: { name: username } });
+			if (!user) {
+				await createUser(interaction, [username]);
+			}
 			// Check list banned
 			await interaction.editReply("Checking if the user is list banned...")
 			if (interaction.member.roles.cache.has(submissionLockRoleID)) {
@@ -266,97 +282,21 @@ module.exports = {
 
 			if (dbStatus.status) return await interaction.editReply(':x: Couldn\'t add the record: Submissions are closed at the moment');
 
-			// Check given URL
+			// Check given URLs
 			await interaction.editReply("Checking if the URL is valid...")
-			const linkStr = interaction.options.getString('completionlink');
 			if (/\s/g.test(linkStr) || !isUrlHttp(linkStr)) return await interaction.editReply(':x: Couldn\'t add the record: The provided completion link is not a valid URL');
-			const rawStr = interaction.options.getString('raw');
 			if (rawStr && (/\s/g.test(rawStr) || !isUrlHttp(rawStr))) return await interaction.editReply(':x: Couldn\'t add the record: The provided raw footage link is not a valid URL');
 
 			
 
 			// Check enjoyment bounds (1-10)
 			await interaction.editReply("Checking if the enjoyment is valid...")
-			const enjoyment = interaction.options.getInteger('enjoyment');
 			if (enjoyment && (enjoyment < 1 || enjoyment > 10)) return await interaction.editReply(':x: Couldn\'t add the record: Enjoyment rating must be between 1 and 10');
 
 			// Check percent bounds (0-100)
 			await interaction.editReply("Checking if the percent is valid...")
-			const percent = interaction.options.getInteger('percent');
 			if (percent < 0 || percent > 100) return await interaction.editReply(':x: Couldn\'t add the record: Percent must be valid (1-100)');
 
-			// Accepting a record //
-
-			const level = await cache.levels.findOne({ where: { filename: [interaction.options.getString('levelname')] } });
-
-
-			await interaction.editReply(`Writing to DB...`);
-			let record;
-			try {
-				const recordEntry = await db.acceptedRecords.create({
-					username: interaction.options.getString('username'),
-					submitter: interaction.user.id,
-					levelname: level.name,
-					filename: level.filename,
-					device: interaction.options.getString('device'),
-					fps: interaction.options.getInteger('fps'),
-					enjoyment: interaction.options.getInteger('enjoyment'),
-					percent: interaction.options.getInteger('percent'),
-					completionlink: linkStr,
-					raw: rawStr,
-					ldm: interaction.options.getInteger('ldm'),
-					modMenu: "none",
-					additionalnotes: interaction.options.getString('additionalnotes'),
-					priority: enablePriorityRole && interaction.member.roles.cache.has(priorityRoleID),
-					moderator: interaction.user.id,
-				});
-				record = recordEntry.dataValues;
-			} catch (error) {
-				logger.error(`Error adding the record to the accepted table: ${error}`);
-			}
-
-			const shiftsLock = await db.infos.findOne({ where: { name: 'shifts' } });
-			if (!shiftsLock || shiftsLock.status) return await interaction.editReply(':x: The bot is currently assigning shifts, please wait a few minutes before checking records.');
-			
-
-			// Get cached user
-			const user = await cache.users.findOne({ where: { name: record.username } });
-			if (!user) {
-				await createUser(interaction, [record.username]);
-			}
-
-			await interaction.editReply(`Writing code...`);
-			// Create embed to send with github code
-			const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${record.completionlink}",\n\t\t"percent": ${record.percent},\n\t\t"hz": ${record.fps}` + (record.enjoyment !== null ? `,\n\t\t"enjoyment": ${record.enjoyment}` : '') + (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
-
-
-			// Create button to remove the message
-
-
-			// Create embed to send in archive with all record info
-			const archiveEmbed = new EmbedBuilder()
-				.setColor(0x8fce00)
-				.setTitle(`:white_check_mark: ${record.levelname}`)
-				.addFields(
-					{ name: 'Percent', value: `${record.percent}%`, inline: true },
-					{ name: 'Record holder', value: `${record.username}`, inline: true },
-					{ name: 'Record added by', value: `${interaction.user}`, inline: true },
-					{ name: 'Device', value: `${record.device}`, inline: true },
-					{ name: 'Link', value: `${record.completionlink}`, inline: true },
-					{ name: 'Raw link', value: `${(!record.raw || record.raw == '' ? 'None' : record.raw)}`, inline: true },
-					{ name: 'Enjoyment', value: `${(record.enjoyment) || "None"}`, inline: true },
-					{ name: 'FPS', value: `${record.fps}`, inline: true },
-					{ name: 'Additional Info', value: `${(!record.additionalnotes || record.additionalnotes == '' ? 'None' : record.additionalnotes)}`, inline: true },
-				)
-				.setTimestamp();
-
-			// Create embed to send in public channel
-
-			logger.info(`${interaction.user.tag} (${interaction.user.id}) accepted record of ${record.levelname} for ${record.username} submitted by ${record.submitter}`);
-
-			await interaction.editReply("Adding record...");
-		
-			const filename = level.filename;
 			let fileResponse;
 			try {
 				fileResponse = await octokit.rest.repos.getContent({
@@ -382,6 +322,7 @@ module.exports = {
 				return await interaction.editReply(`:x: The records field of the fetched ${filename}.json is not an array`);
 			}
 
+			const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${linkStr}",\n\t\t"percent": ${percent},\n\t\t"hz": ${fps}` + (enjoyment !== null ? `,\n\t\t"enjoyment": ${enjoyment}` : '') + (device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
 			const newRecord = JSON.parse(githubCode)
 
 			// {fileRecord} is the record we're looping through, and
@@ -391,28 +332,87 @@ module.exports = {
 			let updated = false;
 			// If duplicate, don't add it to githubCodes
 			for (const fileRecord of parsedData.records) {
-				if (fileRecord.user === record.username) {
-					logger.info(`Found existing record of ${filename} for ${record.username}`);
-					if (fileRecord.percent < record.percent) {
+				if (fileRecord.user === user.name) {
+					logger.info(`Found existing record of ${filename} for ${user.name}`);
+					if (fileRecord.percent < percent) {
 						logger.info('This record has a greater percent on this level, updating...')
-						fileRecord.percent = record.percent;
-						fileRecord.enjoyment = record.enjoyment;
-						fileRecord.link = record.completionlink;
+						fileRecord.percent = percent;
+						fileRecord.enjoyment = enjoyment;
+						fileRecord.link = linkStr;
 						updated = true;
 					} else {
-						logger.info(`Canceled adding duplicated record of ${filename} for ${record.username}`);
+						logger.info(`Canceled adding duplicated record of ${filename} for ${user.name}`);
 						// TODO: this doesnt work
-						await db.acceptedRecords.destroy({ where: { id: record.dataValues['id'] } });
+						// await db.acceptedRecords.destroy({ where: { id: record.dataValues['id'] } });
 						existing = true;
 					}
 				}
 			}
 
+			const shiftsLock = await db.infos.findOne({ where: { name: 'shifts' } });
+			if (!shiftsLock || shiftsLock.status) return await interaction.editReply(':x: The bot is currently assigning shifts, please wait a few minutes before checking records.');
+
+			await interaction.editReply(`Writing code...`);
+
+			// Create embed to send in archive with all record info
+			const archiveEmbed = new EmbedBuilder()
+				.setColor(0x8fce00)
+				.setTitle(`:white_check_mark: ${level.name}`)
+				.addFields(
+					{ name: 'Percent', value: `${percent}%`, inline: true },
+					{ name: 'Record holder', value: `${user.name}`, inline: true },
+					{ name: 'Record added by', value: `${interaction.user}`, inline: true },
+					{ name: 'Device', value: `${device}`, inline: true },
+					{ name: 'Link', value: `${linkStr}`, inline: true },
+					{ name: 'Raw link', value: `${(!rawStr || rawStr == '' ? 'None' : rawStr)}`, inline: true },
+					{ name: 'Enjoyment', value: `${(enjoyment) || "None"}`, inline: true },
+					{ name: 'FPS', value: `${fps}`, inline: true },
+					{ name: 'Additional Info', value: `${(!note || note == '' ? 'None' : note)}`, inline: true },
+				)
+				.setTimestamp();
+
+			// Create embed to send in public channel
+
+			logger.info(`${interaction.user.tag} (${interaction.user.id}) accepted record of ${level.name} for ${user.name}`);
+
+			await interaction.editReply("Adding record...");
+
+			// DEBUG
+			logger.log(`Exising (true): ${existing}`)
+			logger.log(`Updated (false): ${updated}`)
+
 			// if the record does not already exist or existed but has been updated
-			if (existing === true || updated === false) {
+			if (existing === true && updated === false) {
 				return await interaction.editReply(`:x: This user already has a record on this level!`);
 			}	
-			
+			// Accepting a record //
+
+			await interaction.editReply(`Writing to DB...`);
+			let record;
+			try {
+				const recordEntry = await db.acceptedRecords.create({
+					username: user.name,
+					submitter: interaction.user.id,
+					levelname: level.name,
+					filename: level.filename,
+					device: device,
+					fps: fps,
+					enjoyment: enjoyment,
+					percent: percent,
+					completionlink: linkStr,
+					raw: rawStr,
+					ldm: null,
+					modMenu: "none",
+					additionalnotes: note,
+					priority: enablePriorityRole && interaction.member.roles.cache.has(priorityRoleID),
+					moderator: interaction.user.id,
+				});
+				record = recordEntry.dataValues;
+			} catch (error) {
+				logger.error(`Error adding the record to the accepted table: ${error}`);
+				return await interaction.editReply(":x: Couldn't add the record to the database");
+			}
+
 			await interaction.editReply("Committing...");
 			// Add new record to the level's file if this is a new record (not an updated one)
 			if (updated === false) parsedData.records = parsedData.records.concat(newRecord)
@@ -541,7 +541,6 @@ module.exports = {
 				}
 
 				await interaction.message.delete();
-				await interaction.editReply(':white_check_mark: The record has been accepted');
 			}
 
 			// Send all messages simultaneously
