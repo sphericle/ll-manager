@@ -263,6 +263,7 @@ module.exports = {
 			const rawStr = interaction.options.getString('raw');
 
 			const level = await cache.levels.findOne({ where: { filename: [interaction.options.getString('levelname')] } });
+			if (!level) return await interaction.editReply(':x: Couldn\'t find the level you\'re submitting for');
 			const filename = level.filename
 			// Get cached user
 			const user = await cache.users.findOne({ where: { name: username } });
@@ -633,7 +634,7 @@ module.exports = {
 			}
 
 			const level = await cache.levels.findOne({ where: { filename: [newLevel] } });
-			
+			if (!level) return await interaction.editReply(':x: Couldn\'t find the level you\'re submitting for');
 			if (newLevel === oldRecord.filename) {
 				return await interaction.editReply(':x: Choose a different level! That\'s the point of the command lmao????');
 			}
@@ -677,7 +678,7 @@ module.exports = {
 
 			await interaction.editReply(`Writing code...`);
 			// Create embed to send with github code
-			const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${oldRecord.completionlink}",\n\t\t"percent": ${newPercent},\n\t\t"hz": ${newFPS}` + (newEnjoyment !== (-1 || null) ? `,\n\t\t"enjoyment": ${newEnjoyment}` : '') + (newDevice == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
+			const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${oldRecord.completionlink}",\n\t\t"percent": ${newPercent},\n\t\t"hz": ${newFPS}` + (newEnjoyment !== -1 || null ? `,\n\t\t"enjoyment": ${newEnjoyment}` : '') + (newDevice == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
 
 			// Create embed to send in archive with all record info
 			const archiveEmbed = new EmbedBuilder()

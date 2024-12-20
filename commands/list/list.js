@@ -306,6 +306,7 @@ module.exports = {
 			const songLink = interaction.options.getString('songlink') || null;
 
 			const levelToEdit = await cache.levels.findOne({ where: { filename: level } });
+			if (!levelToEdit) return await interaction.editReply(':x: The level you are trying to edit does not exist');
 			const filename = levelToEdit.filename;
 			let fileResponse;
 			try {
@@ -860,9 +861,8 @@ module.exports = {
 			const { cache, octokit } = require('../../index.js');
 			const levelname = await interaction.options.getString('levelname');
 			const levelToDelete = await cache.levels.findOne({ where: { filename: levelname } });
-
-			
 			if (!levelToDelete) return await interaction.editReply(":x: Could not find a level with that name, make sure you pick an given option!")
+			
 			let list;
 			try {
 				list = JSON.parse(Buffer.from((await octokit.rest.repos.getContent({

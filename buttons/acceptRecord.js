@@ -37,6 +37,7 @@ module.exports = {
 		const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${record.completionlink}",\n\t\t"percent": ${record.percent},\n\t\t"hz": ${record.fps}` + (record.enjoyment !== -1 ? `,\n\t\t"enjoyment": ${record.enjoyment}` : '') +  (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
 
 		const level = await cache.levels.findOne({ where: { name: record.levelname } });
+		if (!level) return await interaction.editReply(':x: Couldn\'t find the level this record was submitted for (it might have been deleted)');
 
 		const acceptEmbed = new EmbedBuilder()
 			.setColor(0x8fce00)
