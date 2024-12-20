@@ -856,10 +856,10 @@ module.exports = {
 			const mutualVictorNamesString = mutualVictorNames.map(victor => victor.name).join('\n- ');
 			const attachment = new AttachmentBuilder(Buffer.from("- " + mutualVictorNamesString)).setName(`mutual_victors_${level1}_${level2}.txt`);
 			return await interaction.editReply({ content: `:white_check_mark: Found ${mutualVictorNames.length} mutual victors between **${level1}** and **${level2}**\n`, files: [attachment] });
-		} else if (interaction.options.getSubcommand() === 'hide') {
+		} else if (interaction.options.getSubcommand() === 'remove') {
 			const { cache, octokit } = require('../../index.js');
 			const levelname = await interaction.options.getString('levelname');
-			const levelToDelete = await cache.levels.findOne({ where: { name: levelname } });
+			const levelToDelete = await cache.levels.findOne({ where: { filename: levelname } });
 
 			
 			if (!levelToDelete) return await interaction.editReply(":x: Could not find a level with that name, make sure you pick an given option!")
@@ -972,8 +972,7 @@ module.exports = {
 				logger.info(`Something went wrong while updating the branch reference: \n${updateRefErr}`);
 				return await interaction.editReply(':x: Couldn\'t commit to github, please try again later (updateRefError)');
 			}
-
-			return await interaction.editReply(`:white_check_mark: Removed ${levelname}!`)
+			return await interaction.editReply(`:white_check_mark: Removed ${levelToDelete.name}!`)
 		}
 	},
 };
