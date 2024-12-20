@@ -596,7 +596,7 @@ module.exports = {
 
 			logger.info(`${interaction.user.tag} (${interaction.user.id}) submitted ${record.levelname} for ${interaction.options.getString('username')}`);
 			// Reply
-			await interaction.editReply((enablePriorityRole && interaction.member.roles.cache.has(priorityRoleID) ? `:white_check_mark: The priority record for ${interaction.options.getString('levelname')} has been submitted successfully` : `:white_check_mark: The record for ${record.levelname} has been added successfully`));
+			return await interaction.editReply((enablePriorityRole && interaction.member.roles.cache.has(priorityRoleID) ? `:white_check_mark: The priority record for ${interaction.options.getString('levelname')} has been submitted successfully` : `:white_check_mark: The record for ${record.levelname} has been added successfully`));
 
 		} else if (interaction.options.getSubcommand() === 'addlast') {
 			
@@ -902,7 +902,6 @@ module.exports = {
 						return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (updateRefError)');
 					}
 					logger.info(`Successfully created commit on ${githubBranch} (record addition): ${newCommit.data.sha}`);
-					await interaction.editReply("This record has been added!");
 				} else {
 					// Get file SHA
 					let fileSha;
@@ -935,7 +934,6 @@ module.exports = {
 					}
 
 					await interaction.message.delete();
-					await interaction.editReply(':white_check_mark: The record has been accepted');
 				}
 
 				// Send all messages simultaneously
