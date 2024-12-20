@@ -41,6 +41,8 @@ You will then need to create a config file (an example file is provided in `exam
 > - `guildMemberAddID`: If welcome messages are enabled, the channel ID in which to send them.
 
 After you have created this config file, rename the `.env.example` file to `.env` edit the values inside:
+> - `token`: The discord bot private token. If you do not know what a token is and how to set up a discord bot, refer to [this discord.js guide](https://discordjs.guide/preparations/setting-up-a-bot-application.html)
+> - `githubToken`: The github token that will allow the bot to fetch data from and make changes to the github repository of the list. To create one, refer to [this github page](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
 
 Now you can run `node ./bot.js` in the root directory, to register the bot's commands with discord. They will then appear in both the public and (if enabled) staff server.
 
