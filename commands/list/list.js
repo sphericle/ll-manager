@@ -440,7 +440,6 @@ module.exports = {
 					return await interaction.editReply(':x: Something went wrong while commiting the records to github, please try again later (updateRefError)');
 				}
 				logger.info(`Successfully created commit on ${githubBranch} (record addition): ${newCommit.data.sha}`);
-				await interaction.editReply("This record has been added!");
 			} else {
 				// Get file SHA
 				let fileSha;
@@ -684,7 +683,7 @@ module.exports = {
 					}
 				}
 
-				for (const record of parsedData.records) {
+				for (let record of parsedData.records) {
 					if (record.user === olduser) {
 						record.user = newuser;
 						edited = true;
