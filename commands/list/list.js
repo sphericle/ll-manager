@@ -243,7 +243,6 @@ module.exports = {
 				finalCreators.push(creatorName.trim()); // lol
 			}
 
-
 			let list_response;
 			try {
 				list_response = await octokit.rest.repos.getContent({
