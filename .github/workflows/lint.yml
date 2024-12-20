@@ -3,7 +3,6 @@ name: ESLint Check
 on:
   pull_request:
   workflow_dispatch:
-  push:
 
 jobs:
   eslint:
