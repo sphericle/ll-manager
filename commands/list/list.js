@@ -220,7 +220,7 @@ module.exports = {
 		if (interaction.options.getSubcommand() === 'place') {
 			await interaction.editReply('Placing level...');
 
-			const { db, cache } = require('../../index.js');
+			const { db, cache, octokit } = require('../../index.js');
 
 			const levelname = interaction.options.getString('levelname');
 			const position = interaction.options.getInteger('position');
@@ -237,16 +237,43 @@ module.exports = {
 			const songLink = interaction.options.getString('songlink') || null;
 			
 
+
 			const finalCreators = [];
 			for (const creatorName of creatorNames) {
 				finalCreators.push(creatorName.trim()); // lol
 			}
 
+			let realPos = position;
+
+			let list_response;
+			try {
+				list_response = await octokit.rest.repos.getContent({
+					owner: githubOwner,
+					repo: githubRepo,
+					path: githubDataPath + '/_list.json',
+					branch: githubBranch,
+				});
+
+			} catch (_) {
+				return await interaction.editReply(':x: Something went wrong while fetching data from github, please try again later');
+			}
+
+			const list = JSON.parse(Buffer.from(list_response.data.content, 'base64').toString('utf-8'));
+
+			logger.log(`List length: ${list.length}`)
+			// filter out all levels that are not dividers
+			const noDiv = list.filter(level => !level.startsWith("_"))
+			
+			const indexBelow = noDiv[realPos - 1];
+
+			logger.log(indexBelow)
+
 			await interaction.editReply('Coding...');
 			const githubCode = `{\n\t"id": ${id},\n\t"name": "${levelname}",\n\t"author": "${uploaderName}",\n\t"creators": ${JSON.stringify(finalCreators)},\n\t"verifier": "${verifierName}",\n\t"verification": "${verification}",\n\t"percentToQualify": ${percent},\n\t"password": "${password}",\n\t"difficulty": ${difficulty},\n\t"song": "${songName}",` + (songLink !== null ? `\n\t"songLink": "${songLink}",` : '') + `\n\t"records" : []\n}`;
 
-			const levelBelow = await cache.levels.findOne({ where: { position: position } });
-			const levelAbove = await cache.levels.findOne({ where: { position: position - 1 } });
+
+			const levelBelow = await cache.levels.findOne({ where: { filename: indexBelow } });
+			const levelAbove = await cache.levels.findOne({ where: { position: levelBelow.position - 1 } });
 			const placeEmbed = new EmbedBuilder()
 				.setColor(0x8fce00)
 				.setTitle(`Place Level: ${levelname}`)
@@ -271,7 +298,7 @@ module.exports = {
 			const row = new ActionRowBuilder()
 				.addComponents(commit);
 
-			await interaction.editReply({ embeds: [placeEmbed], components: [row] });
+			await interaction.editReply({ content: "Confirm:", embeds: [placeEmbed], components: [row] });
 			const sent = await interaction.fetchReply();
 
 			try {
