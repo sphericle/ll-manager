@@ -5,11 +5,10 @@ on:
   workflow_dispatch:
   push:
 
-continue-on-error: true
-
 jobs:
   eslint:
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     steps:
       # Checkout the repository
