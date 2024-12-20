@@ -972,7 +972,7 @@ module.exports = {
 				logger.info(`Something went wrong while updating the branch reference: \n${updateRefErr}`);
 				return await interaction.editReply(':x: Couldn\'t commit to github, please try again later (updateRefError)');
 			}
-
+			// TODO: change this to use name from database
 			return await interaction.editReply(`:white_check_mark: Removed ${levelname}!`)
 		}
 	},
