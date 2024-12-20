@@ -26,3 +26,20 @@ jobs:
       # Run ESLint
       - name: Run ESLint
         run: npx eslint . --ext .js,.jsx,.ts,.tsx # Adjust extensions as needed
+
+      - name: Run prettier
+        uses: actionsx/prettier@v2
+        with:
+          args: --write .
+        
+      - name: Commit files # only runs if something actually changed
+        run: |
+          if [[ -n "$(git status -s)" ]]; then
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git commit -m "CI: Automatic Format" -a
+          fi
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
