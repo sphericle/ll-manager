@@ -243,7 +243,6 @@ module.exports = {
 				finalCreators.push(creatorName.trim()); // lol
 			}
 
-			let realPos = position;
 
 			let list_response;
 			try {
@@ -264,7 +263,7 @@ module.exports = {
 			// filter out all levels that are not dividers
 			const noDiv = list.filter(level => !level.startsWith("_"))
 			
-			const indexBelow = noDiv[realPos - 1];
+			const indexBelow = noDiv[position - 1];
 
 			logger.log(indexBelow)
 
