@@ -54,8 +54,8 @@ module.exports = {
 		}
 
 		// get the level below the level we want to place
-		// +2 because 1 is index offset and 1 is to get the above level
-		const levelBelow = noDiv[level.position + 2];
+		// +1 because we want the level above this one in the index
+		const levelBelow = noDiv[level.position + 1];
 		logger.log(`Level below: ${levelBelow}`)
 
 		// find the index of that level in the real list
