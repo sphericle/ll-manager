@@ -595,10 +595,10 @@ module.exports = {
 
 			logger.info(`${interaction.user.tag} (${interaction.user.id}) submitted ${record.levelname} for ${record.username}`);
 			return await interaction.editReply((enablePriorityRole && interaction.member.roles.cache.has(priorityRoleID) ? `:white_check_mark: The priority record for ${record.levelname} has been submitted successfully` : `:white_check_mark: The record for ${record.levelname} has been added successfully`));
-		} else if (interaction.options.getSubcommand() === 'addlast') {
-			
+		} else if (interaction.options.getSubcommand() === 'addlast') {			
 			await interaction.deferReply({ ephemeral: true });
 
+			const { cache } = require('../../index.js');
 			// get last row from accepted records db
 
 			await interaction.editReply("Getting last record...")
@@ -615,13 +615,11 @@ module.exports = {
 			let newEnjoyment = interaction.options.getInteger('enjoyment') || oldRecord.enjoyment;
 			let newFPS = interaction.options.getString('fps') || oldRecord.fps;
 			let newDevice = interaction.options.getString('device') || oldRecord.device;
-			let newRaw = interaction.options.getString('raw') || oldRecord.raw;
 			let newNotes = interaction.options.getString('notes') || oldRecord.notes;
 			let newModMenu = interaction.options.getString('modmenu') || oldRecord.modmenu;
 
 			const setNoneToNull = (val) => (typeof val === 'string' && val.toLowerCase() === 'none' ? null : val);
 
-			newRaw = setNoneToNull(newRaw);
 			newNotes = setNoneToNull(newNotes);
 			newModMenu = setNoneToNull(newModMenu);
 
@@ -629,11 +627,8 @@ module.exports = {
 			newFPS = (newFPS === -1 ? null : newFPS);
 			newEnjoyment = (newEnjoyment === -1 ? null : newEnjoyment);
 
-
 			if (interaction.options.getString('notes')) {
-				if (interaction.options.getString('notes').toLowerCase() === 'none') {
-					newNotes = null;
-				}
+				if (interaction.options.getString('notes').toLowerCase() === 'none') newNotes = null;
 				newNotes = interaction.options.getString('notes');
 			}
 
@@ -645,7 +640,7 @@ module.exports = {
 
 			// add record to list
 			await interaction.editReply(`Adding record...`);
-			const { cache } = require('../../index.js');
+			
 
 			// Check list banned
 			await interaction.editReply("Checking if the user is list banned...")
@@ -660,57 +655,16 @@ module.exports = {
 
 			if (dbStatus.status) return await interaction.editReply(':x: Couldn\'t add the record: Submissions are closed at the moment');
 
-			// Check given URL
-			await interaction.editReply("Checking if the URL is valid...")
-			const linkStr = oldRecord.completionlink;
-			if (/\s/g.test(linkStr) || !isUrlHttp(linkStr)) return await interaction.editReply(':x: Couldn\'t add the record: The provided completion link is not a valid URL');
-			const rawStr = newRaw;
-			if (rawStr && (/\s/g.test(rawStr) || !isUrlHttp(rawStr))) return await interaction.editReply(':x: Couldn\'t add the record: The provided raw footage link is not a valid URL');
-
-
-
 			// Check enjoyment bounds (1-10)
 			await interaction.editReply("Checking if the enjoyment is valid...")
-			// why is this a new variable lol
-			const enjoyment = newEnjoyment;
-			if (enjoyment && (enjoyment < 1 || enjoyment > 10)) return await interaction.editReply(':x: Couldn\'t add the record: Enjoyment rating must be between 1 and 10');
+			
+			if (newEnjoyment && (newEnjoyment < -1 || newEnjoyment > 10)) return await interaction.editReply(':x: Couldn\'t add the record: Enjoyment rating must be between 1 and 10');
 
 			// Check percent bounds (0-100)
 			await interaction.editReply("Checking if the percent is valid...")
-			// same here
-			const percent = newPercent;
-			if (percent < 0 || percent > 100) return await interaction.editReply(':x: Couldn\'t add the record: Percent must be valid (1-100)');
+			if (newPercent < -1 || newPercent > 100) return await interaction.editReply(':x: Couldn\'t add the record: Percent must be valid (1-100)');
 
 			// Accepting a record //
-
-			await interaction.editReply("Writing record to DB...")
-			let record;
-			try {
-				const recordEntry = await db.acceptedRecords.create({
-					username: oldRecord.username,
-					submitter: interaction.user.id, // always equal to moderator
-					levelname: level.name,
-					filename: level.filename,
-					device: newDevice,
-					completionlink: oldRecord.completionlink,
-					enjoyment: newEnjoyment,
-					fps: newFPS,
-					percent: newPercent,
-					raw: newRaw,
-					ldm: oldRecord.ldm, // always 0
-					additionalnotes: newNotes,
-					priority: oldRecord.priority, // always false
-					modMenu: newModMenu,
-					moderator: interaction.user.id, // always equal to submitter
-				});
-
-				record = recordEntry.dataValues;
-			} catch (e) {
-				logger.log(`Error while adding the record to the database: ${e}`)
-				return await interaction.editReply(`:x: Error while adding the record to the database: ${e}`)
-			}
-
-
 			await interaction.editReply(`Matched level ${level.filename}`);
 
 			const shiftsLock = await db.infos.findOne({ where: { name: 'shifts' } });
@@ -718,33 +672,33 @@ module.exports = {
 
 
 			// Get cached user
-			const user = await cache.users.findOne({ where: { name: record.username } });
+			const user = await cache.users.findOne({ where: { name: oldRecord.username } });
 			if (!user) return await interaction.editReply(':x: Couldn\'t find the user this record was submitted for (their name might have changed since they submitted it)');
 
 			await interaction.editReply(`Writing code...`);
 			// Create embed to send with github code
-			const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${record.completionlink}",\n\t\t"percent": ${record.percent},\n\t\t"hz": ${record.fps}` + (record.enjoyment !== -1 || null ? `,\n\t\t"enjoyment": ${record.enjoyment}` : '') + (record.device == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
+			const githubCode = `{\n\t\t"user": "${user.name}",\n\t\t"link": "${oldRecord.completionlink}",\n\t\t"percent": ${newPercent},\n\t\t"hz": ${newFPS}` + (newEnjoyment !== (-1 || null) ? `,\n\t\t"enjoyment": ${newEnjoyment}` : '') + (newDevice == 'Mobile' ? ',\n\t\t"mobile": true\n}\n' : '\n}');
 
 			// Create embed to send in archive with all record info
 			const archiveEmbed = new EmbedBuilder()
 				.setColor(0x8fce00)
-				.setTitle(`:white_check_mark: ${record.levelname}`)
+				.setTitle(`:white_check_mark: ${level.name}`)
 				.addFields(
-					{ name: 'Percent', value: `${record.percent}%`, inline: true },
-					{ name: 'Record holder', value: `${record.username}`, inline: true },
+					{ name: 'Percent', value: `${newPercent}%`, inline: true },
+					{ name: 'Record holder', value: `${user.name}`, inline: true },
 					{ name: 'Record added by', value: `${interaction.user}`, inline: true },
-					{ name: 'Device', value: `${record.device}`, inline: true },
-					{ name: 'Link', value: `${record.completionlink}`, inline: true },
-					{ name: 'Raw link', value: `${(!record.raw || record.raw == '' ? 'None' : record.raw)}`, inline: true },
-					{ name: 'Enjoyment', value: `${(record.enjoyment) || "None"}`, inline: true },
-					{ name: 'FPS', value: `${record.fps}`, inline: true },
-					{ name: 'Additional Info', value: `${(!record.additionalnotes || record.additionalnotes == '' ? 'None' : record.additionalnotes)}`, inline: true },
+					{ name: 'Device', value: `${newDevice}`, inline: true },
+					{ name: 'Link', value: `${oldRecord.completionlink}`, inline: true },
+					{ name: 'Raw link', value: `${(!oldRecord.raw || oldRecord.raw == '' ? 'None' : oldRecord.raw)}`, inline: true },
+					{ name: 'Enjoyment', value: `${(newEnjoyment) || "None"}`, inline: true },
+					{ name: 'FPS', value: `${newFPS}`, inline: true },
+					{ name: 'Additional Info', value: `${(!newNotes || newNotes == '' ? 'None' : newNotes)}`, inline: true },
 				)
 				.setTimestamp();
 
 			// Create embed to send in public channel
 
-			logger.info(`${interaction.user.tag} (${interaction.user.id}) accepted record of ${record.levelname} for ${record.username} submitted by ${record.submitter}`);
+			logger.info(`${interaction.user.tag} (${interaction.user.id}) accepted record of ${level.name} for ${user.name}`);
 
 			await interaction.editReply("Adding record...");
 
@@ -783,26 +737,54 @@ module.exports = {
 			let updated = false;
 			// If duplicate, don't add it to githubCodes
 			for (const fileRecord of parsedData.records) {
-				if (fileRecord.user === record.username) {
-					logger.info(`Found existing record of ${filename} for ${record.username}`);
-					if (fileRecord.percent < record.percent) {
+				if (fileRecord.user === user.name) {
+					logger.info(`Found existing record of ${filename} for ${user.name}`);
+					if (fileRecord.percent < newPercent) {
 						logger.info('This record has a greater percent on this level, updating...')
-						fileRecord.percent = record.percent;
-						fileRecord.enjoyment = record.enjoyment;
-						fileRecord.link = record.completionlink;
+						fileRecord.percent = newPercent;
+						fileRecord.enjoyment = newEnjoyment;
+						fileRecord.link = oldRecord.completionlink;
 						updated = true;
 					} else {
-						logger.info(`Canceled adding duplicated record of ${filename} for ${record.username}`);
+						logger.info(`Canceled adding duplicated record of ${filename} for ${user.name}`);
 						// todo: what the flip
-						await db.acceptedRecords.destroy({ where: { id: record.dataValues['id'] } });
+						// await db.acceptedRecords.destroy({ where: { id: record.dataValues['id'] } });
 						existing = true;
 					}
 				}
 			}
 
 			// if the record does not already exist or existed but has been updated
-			if (existing === true || updated === false) {
+			if (existing === true && updated === false) {
 				return await interaction.editReply(`:x: This user already has a record on this level!`);
+			}
+
+
+			await interaction.editReply("Writing record to DB...")
+			let record;
+			try {
+				const recordEntry = await db.acceptedRecords.create({
+					username: oldRecord.username,
+					submitter: interaction.user.id, // always equal to moderator
+					levelname: level.name,
+					filename: level.filename,
+					device: newDevice,
+					completionlink: oldRecord.completionlink,
+					enjoyment: newEnjoyment,
+					fps: newFPS,
+					percent: newPercent,
+					raw: oldRecord.raw,
+					ldm: oldRecord.ldm, // always 0
+					additionalnotes: newNotes,
+					priority: oldRecord.priority, // always false
+					modMenu: newModMenu,
+					moderator: interaction.user.id, // always equal to submitter
+				});
+
+				record = recordEntry.dataValues;
+			} catch (e) {
+				logger.log(`Error while adding the record to the database: ${e}`)
+				return await interaction.editReply(`:x: Error while adding the record to the database: ${e}`)
 			}
 
 			await interaction.editReply("Committing...");
