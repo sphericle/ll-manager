@@ -1,6 +1,4 @@
 node_modules
 data
 logs
-eslint.config.mjs
-.eslintrc.json
 .env
