@@ -589,6 +589,10 @@ module.exports = {
             const levelToEdit = await cache.levels.findOne({
                 where: { filename: level },
             });
+            let finalCreators = [];
+            for (const creatorName of creatorNames) {
+                finalCreators.push(creatorName.trim()); // lol
+            }
             if (!levelToEdit)
                 return await interaction.editReply(
                     ":x: The level you are trying to edit does not exist"
@@ -631,7 +635,7 @@ module.exports = {
             if (verifierName !== null) parsedData.verifier = verifierName;
             if (verification !== null) parsedData.verification = verification;
             if (password !== null) parsedData.password = password;
-            if (creatorNames.length > 0) parsedData.creators = creatorNames;
+            if (finalCreators.length > 0) parsedData.creators = finalCreators;
             if (percent !== null) parsedData.percentToQualify = percent;
             if (difficulty !== null) parsedData.difficulty = difficulty;
             if (songName !== null) parsedData.song = songName;
@@ -646,7 +650,7 @@ module.exports = {
                 verifierName !== null ||
                 verification !== null ||
                 password !== null ||
-                creatorNames.length > 0 ||
+                finalCreators.length > 0 ||
                 percent !== null ||
                 difficulty !== null ||
                 songName !== null ||
