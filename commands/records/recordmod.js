@@ -2207,6 +2207,7 @@ module.exports = {
                 interaction.options.getInteger("enjoyment") || null;
             const video =
                 interaction.options.getString("completionlink") || null;
+            const device = interaction.options.getString("device") || null;
 
             if (newuser !== null)
                 parsedData.records[recordIndex].user = newuser;
@@ -2216,6 +2217,13 @@ module.exports = {
             if (enjoyment !== null)
                 parsedData.records[recordIndex].enjoyment = enjoyment;
             if (video !== null) parsedData.records[recordIndex].link = video;
+            if (device !== null) {
+                if (device === "Mobile") {
+                    parsedData.records[recordIndex].mobile = true;
+                } else {
+                    delete parsedData.records[recordIndex].mobile;
+                }
+            }
 
             await interaction.editReply("Committing...");
 
