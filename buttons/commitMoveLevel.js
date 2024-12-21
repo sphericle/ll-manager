@@ -53,10 +53,12 @@ module.exports = {
         const list = JSON.parse(
             Buffer.from(list_response.data.content, "base64").toString("utf-8")
         );
+        
+        // 
         const noDiv = list.filter((level) => !level.startsWith("_"));
 
         const currentPosition = list.indexOf(level.filename) + 1;
-        if (currentPosition == -1)
+        if (currentPosition == 0)
             return await interaction.editReply(
                 ":x: The given level is not on the list"
             );
@@ -83,12 +85,12 @@ module.exports = {
         // find the index of that level in the real list
         const realAbove = list.indexOf(levelBelow);
 
+        // insert the level above the real list index
+        list.splice(realAbove - 3, 0, level.filename);
+
         // -1 bc indexes
         // insert joke about language with indexing at 1 like maybe they were onto something
         list.splice(currentPosition - 1, 1);
-
-        // insert the level above the real list index
-        list.splice(realAbove - 3, 0, level.filename);
 
         changelogList.push({
             date: Math.floor(new Date().getTime() / 1000),
