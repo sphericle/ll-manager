@@ -29,7 +29,7 @@
     },
     {
         "name": "Records",
-        "id": 1,
+        "id": 2,
         "discname": "record",
         "description": "Commands to manage record on the list.",
         "subcommands": [
