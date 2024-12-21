@@ -2362,6 +2362,247 @@ module.exports = {
             } else {
                 interaction.editReply(":x: No users to update.");
             }
+        } else if (interaction.options.getSubcommand() === "shift") {
+            await interaction.deferReply({ ephemeral: true });
+            const { cache, octokit } = require("../../index.js");
+            const level = await cache.levels.findOne({
+                where: { filename: interaction.options.getString("levelname") },
+            });
+            const username = interaction.options.getString("username");
+            const offset = interaction.options.getInteger("offset");
+
+            offset = offset * -1;
+
+
+
+            if (!level)
+                return await interaction.editReply(
+                    ":x: Couldn't find the level"
+                );
+            const filename = level.filename;
+
+            let fileResponse;
+            try {
+                fileResponse = await octokit.rest.repos.getContent({
+                    owner: githubOwner,
+                    repo: githubRepo,
+                    path: githubDataPath + `/${filename}.json`,
+                    branch: githubBranch,
+                });
+            } catch (fetchError) {
+                logger.info(`Couldn't fetch ${filename}.json: \n${fetchError}`);
+                return await interaction.editReply(
+                    `:x: Couldn't fetch ${filename}.json: \n${fetchError}`
+                );
+            }
+
+            let parsedData;
+            try {
+                parsedData = JSON.parse(
+                    Buffer.from(fileResponse.data.content, "base64").toString(
+                        "utf-8"
+                    )
+                );
+            } catch (parseError) {
+                logger.info(
+                    `Unable to parse data fetched from ${filename}:\n${parseError}`
+                );
+                return await interaction.editReply(
+                    `:x: Unable to parse data fetched from ${filename}:\n${parseError}`
+                );
+            }
+            if (!Array.isArray(parsedData.records)) {
+                logger.info(
+                    `The records field of the fetched ${filename}.json is not an array`
+                );
+                return await interaction.editReply(
+                    `:x: The records field of the fetched ${filename}.json is not an array`
+                );
+            }
+
+            const recordIndex = parsedData.records.findIndex(
+                (record) => record.user === username
+            );
+            if (recordIndex === -1)
+                return await interaction.editReply(
+                    `:x: Couldn't find a record with the username \`${username}\``
+                );
+
+            const newPos = recordIndex + offset;
+            if (newPos < 0 || newPos >= parsedData.records.length)
+                return await interaction.editReply(
+                    `:x: The new position is out of bounds`
+                );
+            
+            parsedData.records.splice(recordIndex, 1)[0];
+            parsedData.records.splice(recordIndex, 1);
+
+            await interaction.editReply("Committing...");
+
+            // not sure why it needs to be done this way but :shrug:
+            let changes = [];
+            changes.push({
+                path: githubDataPath + `/${filename}.json`,
+                content: JSON.stringify(parsedData, null, "\t"),
+            });
+
+            const changePath = githubDataPath + `/${filename}.json`;
+            const content = JSON.stringify(parsedData);
+
+            const debugStatus = await db.infos.findOne({
+                where: { name: "commitdebug" },
+            });
+            if (!debugStatus || !debugStatus.status) {
+                let commitSha;
+                try {
+                    // Get the SHA of the latest commit from the branch
+                    const { data: refData } = await octokit.git.getRef({
+                        owner: githubOwner,
+                        repo: githubRepo,
+                        ref: `heads/${githubBranch}`,
+                    });
+                    commitSha = refData.object.sha;
+                } catch (getRefError) {
+                    logger.info(
+                        `Something went wrong while fetching the latest commit SHA:\n${getRefError}`
+                    );
+                    await db.messageLocks.destroy({
+                        where: { discordid: interaction.message.id },
+                    });
+                    return await interaction.editReply(
+                        ":x: Something went wrong while commiting the records to github, please try again later (getRefError)"
+                    );
+                }
+                let treeSha;
+                try {
+                    // Get the commit using its SHA
+                    const { data: commitData } = await octokit.git.getCommit({
+                        owner: githubOwner,
+                        repo: githubRepo,
+                        commit_sha: commitSha,
+                    });
+                    treeSha = commitData.tree.sha;
+                } catch (getCommitError) {
+                    logger.info(
+                        `Something went wrong while fetching the latest commit:\n${getCommitError}`
+                    );
+                    await db.messageLocks.destroy({
+                        where: { discordid: interaction.message.id },
+                    });
+                    return await interaction.editReply(
+                        ":x: Something went wrong while commiting the records to github, please try again later (getCommitError)"
+                    );
+                }
+
+                let newTree;
+                try {
+                    // Create a new tree with the changes
+                    newTree = await octokit.git.createTree({
+                        owner: githubOwner,
+                        repo: githubRepo,
+                        base_tree: treeSha,
+                        tree: changes.map((change) => ({
+                            path: change.path,
+                            mode: "100644",
+                            type: "blob",
+                            content: change.content,
+                        })),
+                    });
+                } catch (createTreeError) {
+                    logger.info(
+                        `Something went wrong while creating a new tree:\n${createTreeError}`
+                    );
+                    await db.messageLocks.destroy({
+                        where: { discordid: interaction.message.id },
+                    });
+                    return await interaction.editReply(
+                        ":x: Something went wrong while commiting the records to github, please try again later (createTreeError)"
+                    );
+                }
+
+                let newCommit;
+                try {
+                    // Create a new commit with this tree
+                    newCommit = await octokit.git.createCommit({
+                        owner: githubOwner,
+                        repo: githubRepo,
+                        message: `Removed ${username}'s record from ${filename}.json (${interaction.user.tag})`,
+                        tree: newTree.data.sha,
+                        parents: [commitSha],
+                    });
+                } catch (createCommitError) {
+                    logger.info(
+                        `Something went wrong while creating a new commit:\n${createCommitError}`
+                    );
+                    await db.messageLocks.destroy({
+                        where: { discordid: interaction.message.id },
+                    });
+                    return await interaction.editReply(
+                        ":x: Something went wrong while commiting the records to github, please try again later (createCommitError)"
+                    );
+                }
+
+                try {
+                    // Update the branch to point to the new commit
+                    await octokit.git.updateRef({
+                        owner: githubOwner,
+                        repo: githubRepo,
+                        ref: `heads/${githubBranch}`,
+                        sha: newCommit.data.sha,
+                    });
+                } catch (updateRefError) {
+                    logger.info(
+                        `Something went wrong while updating the branch :\n${updateRefError}`
+                    );
+                    await db.messageLocks.destroy({
+                        where: { discordid: interaction.message.id },
+                    });
+                    return await interaction.editReply(
+                        ":x: Something went wrong while commiting the records to github, please try again later (updateRefError)"
+                    );
+                }
+                logger.info(
+                    `Successfully created commit on ${githubBranch} (record addition): ${newCommit.data.sha}`
+                );
+                await interaction.editReply("This record has been removed!");
+            } else {
+                // Get file SHA
+                let fileSha;
+                try {
+                    const response = await octokit.repos.getContent({
+                        owner: githubOwner,
+                        repo: githubRepo,
+                        path: changePath,
+                    });
+                    fileSha = response.data.sha;
+                } catch (error) {
+                    logger.info(`Error fetching ${changePath} SHA:\n${error}`);
+                    return await interaction.editReply(
+                        `:x: Couldn't fetch data from ${changePath}`
+                    );
+                }
+
+                try {
+                    await octokit.repos.createOrUpdateFileContents({
+                        owner: githubOwner,
+                        repo: githubRepo,
+                        path: changePath,
+                        message: `Updated ${changePath} (${interaction.user.tag})`,
+                        content: Buffer.from(content).toString("base64"),
+                        sha: fileSha,
+                    });
+                    logger.info(
+                        `Updated ${changePath} (${interaction.user.tag}`
+                    );
+                } catch (error) {
+                    logger.info(
+                        `Failed to update ${changePath} (${interaction.user.tag}):\n${error}`
+                    );
+                    await interaction.editReply(
+                        `:x: Couldn't update the file ${changePath}, skipping...`
+                    );
+                }
+            }
         }
     },
 };

@@ -190,6 +190,12 @@ module.exports = {
             filename: Sequelize.STRING,
         });
 
+        cache.archived = sequelize_cache.define("archived", {
+            name: Sequelize.STRING,
+            position: Sequelize.INTEGER,
+            filename: Sequelize.STRING,
+        });
+
         cache.legacy = sequelize_cache.define("legacy_levels", {
             name: Sequelize.STRING,
             position: Sequelize.INTEGER,

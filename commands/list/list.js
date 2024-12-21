@@ -13,7 +13,7 @@ const {
     githubBranch,
 } = require("../../config.json");
 const logger = require("log4js").getLogger();
-const { Sequelize } = require("sequelize");
+const Sequelize = require("sequelize");
 
 module.exports = {
     enabled: true,
@@ -358,6 +358,24 @@ module.exports = {
                         .setDescription("The new name of the user")
                         .setRequired(true)
                 )
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName("restore")
+                .setDescription("Restore a level that has been removed")
+                .addStringOption((option) =>
+                    option
+                        .setName("levelname")
+                        .setDescription("The name of the level to restore")
+                        .setAutocomplete(true)
+                        .setRequired(true)
+                )
+                .addIntegerOption((option) =>
+                    option
+                        .setName("position")
+                        .setDescription("The position to restore the level at")
+                        .setRequired(true)
+                )
         ),
     async autocomplete(interaction) {
         const focused = interaction.options.getFocused(true);
@@ -391,6 +409,21 @@ module.exports = {
                     .slice(0, 25)
                     .map((level) => ({ name: level.name, value: level.name }))
             );
+
+        } else if (subcommand === "restore") {
+            let levels = await cache.archived.findAll({
+                where: {
+                    name: Sequelize.where(
+                        Sequelize.fn("LOWER", Sequelize.col("name")),
+                        "LIKE",
+                        "%" + focused.value.toLowerCase() + "%"
+                    ),
+                },
+            });
+            return await interaction.respond(
+                levels
+                    .slice(0, 25)
+                    .map((level) => ({ name: level.name, value: level.filename })))
         } else
             return await interaction.respond(
                 (
@@ -484,8 +517,7 @@ module.exports = {
                 .setColor(0x8fce00)
                 .setTitle(`Place Level: ${levelname}`)
                 .setDescription(
-                    `**${levelname}** will be placed at **#${position}**, above **${
-                        levelBelow ? levelBelow.name : "-"
+                    `**${levelname}** will be placed at **#${position}**, above **${levelBelow ? levelBelow.name : "-"
                     }** and below **${levelAbove ? levelAbove.name : "-"}**`
                 )
                 .addFields(
@@ -497,11 +529,10 @@ module.exports = {
                     },
                     {
                         name: "Creators:",
-                        value: `${
-                            rawCreators
+                        value: `${rawCreators
                                 ? rawCreators.slice(0, 1023)
                                 : "None provided"
-                        }`,
+                            }`,
                         inline: true,
                     },
                     {
@@ -832,8 +863,7 @@ module.exports = {
             }
 
             logger.info(
-                `${interaction.user.tag} (${
-                    interaction.user.id
+                `${interaction.user.tag} (${interaction.user.id
                 }) submitted ${interaction.options.getString(
                     "levelname"
                 )} for ${interaction.options.getString("username")}`
@@ -889,10 +919,8 @@ module.exports = {
                 .setColor(0x8fce00)
                 .setTitle(`Move Level: ${levelfile}`)
                 .setDescription(
-                    `**${levelfile}** will be ${
-                        lowered ? "lowered" : "raised"
-                    } to **#${position}**, above **${
-                        levelBelow.name ?? "-"
+                    `**${levelfile}** will be ${lowered ? "lowered" : "raised"
+                    } to **#${position}**, above **${levelBelow.name ?? "-"
                     }** and below **${levelAbove.name ?? "-"}**`
                 )
                 .setTimestamp();
@@ -961,8 +989,7 @@ module.exports = {
                 .setColor(0x8fce00)
                 .setTitle(`Move to Legacy: ${levelfile}`)
                 .setDescription(
-                    `**${levelfile}** will be moved from **#${
-                        currentPosition + 1
+                    `**${levelfile}** will be moved from **#${currentPosition + 1
                     }** to the top of the **legacy** list (**#${list.length}**)`
                 )
                 .setTimestamp();
@@ -1027,8 +1054,7 @@ module.exports = {
                 .setColor(0x8fce00)
                 .setTitle(`Move Level: ${levelfile}`)
                 .setDescription(
-                    `**${levelfile}** will be moved from **legacy** to **#${position}**, above **${
-                        levelBelow ?? "-"
+                    `**${levelfile}** will be moved from **legacy** to **#${position}**, above **${levelBelow ?? "-"
                     }** and below **${levelAbove ?? "-"}**`
                 )
                 .setTimestamp();
@@ -1092,7 +1118,7 @@ module.exports = {
                 if (!listFilename.startsWith("_"))
                     logger.error(
                         "Git - " +
-                            `Unable to parse data from ${listFilename}:\n${parseError}`
+                        `Unable to parse data from ${listFilename}:\n${parseError}`
                     );
                 return -1;
             }
@@ -1110,7 +1136,7 @@ module.exports = {
                     if (!filename.startsWith("_"))
                         logger.error(
                             "Git - " +
-                                `Unable to parse data from ${filename}.json:\n${parseError}`
+                            `Unable to parse data from ${filename}.json:\n${parseError}`
                         );
                     continue;
                 }
@@ -1160,7 +1186,7 @@ module.exports = {
                 if (!flagsFilename.startsWith("_"))
                     logger.error(
                         "Git - " +
-                            `Unable to parse data from ${listFilename}:\n${parseError}`
+                        `Unable to parse data from ${listFilename}:\n${parseError}`
                     );
                 return;
             }
@@ -1465,7 +1491,7 @@ module.exports = {
                 {
                     path: githubDataPath + `/archived/${filename}.json`,
                     content: JSON.stringify(parsedData, null, "\t"),
-                },
+                }
             ];
 
             let commitSha;
@@ -1562,9 +1588,252 @@ module.exports = {
                     ":x: Couldn't commit to github, please try again later (updateRefError)"
                 );
             }
+            try {
+                cache.archived.create({
+                    filename: filename,
+                    name: levelToDelete.name,
+                    position: levelToDelete.position,
+                });
+            } catch (e) {
+                return await interaction.editReply(
+                    `:x: Error removing level from database: ${e}`
+                );
+            }
+            try {
+                cache.levels.destroy({ where: { filename: levelToDelete.filename } });
+            } catch (e) {
+                return await interaction.editReply(
+                    `:x: Error removing level from database: ${e}`
+                );
+            }
             return await interaction.editReply(
                 `:white_check_mark: Removed ${levelToDelete.name}!`
             );
+        } else if (interaction.options.getSubcommand() === "restore") {
+            const { cache, octokit } = require("../../index.js");
+
+            const levelname = interaction.options.getString("levelname");
+            const position = interaction.options.getInteger("position");
+
+            let dbLevel = await cache.archived.findOne({ where: { filename: levelname } });
+            if (!dbLevel) {
+                return await interaction.editReply(
+                    ":x: The level you are trying to restore does not exist in the database"
+                );
+            }
+            const filename = dbLevel.filename;
+
+            let changes = []
+            let fileResponse;
+            try {
+                fileResponse = await octokit.rest.repos.getContent({
+                    owner: githubOwner,
+                    repo: githubRepo,
+                    path: githubDataPath + `/archived/${filename}.json`,
+                    branch: githubBranch,
+                });
+            } catch (fetchError) {
+                logger.info(`Couldn't fetch ${filename}.json: \n${fetchError}`);
+                return await interaction.editReply(
+                    `:x: Couldn't fetch ${filename}.json: \n${fetchError}`
+                );
+            }
+
+            const parsedData = JSON.parse(Buffer.from(fileResponse.data.content, "base64").toString(
+                "utf-8"
+            ))
+            // move the file back to the main folder
+            changes.push({
+                path: githubDataPath + `/${filename}.json`,
+                content: JSON.stringify(parsedData, null, "\t"),
+            });
+
+
+            let list_response;
+            try {
+                list_response = await octokit.rest.repos.getContent({
+                    owner: githubOwner,
+                    repo: githubRepo,
+                    path: githubDataPath + "/_list.json",
+                    branch: githubBranch,
+                });
+            } catch (_) {
+                return await interaction.editReply(
+                    ":x: Something went wrong while fetching data from github, please try again later"
+                );
+            }
+
+            const list = JSON.parse(
+                Buffer.from(list_response.data.content, "base64").toString(
+                    "utf-8"
+                )
+            );
+            let changelog_response;
+            try {
+                list_response = await octokit.rest.repos.getContent({
+                    owner: githubOwner,
+                    repo: githubRepo,
+                    path: githubDataPath + "/_list.json",
+                    branch: githubBranch,
+                });
+            } catch (_) {
+                return await interaction.editReply(
+                    ":x: Something went wrong while fetching data from github, please try again later"
+                );
+            }
+
+            try {
+                changelog_response = await octokit.rest.repos.getContent({
+                    owner: githubOwner,
+                    repo: githubRepo,
+                    path: githubDataPath + "/_changelog.json",
+                    branch: githubBranch,
+                });
+            } catch (_) {
+                logger.info("No changelog file found, creating a new one");
+            }
+
+            // filter out all levels that are not dividers
+            const noDiv = list.filter((level) => !level.startsWith("_"));
+
+            const changelogList = changelog_response
+                ? JSON.parse(
+                    Buffer.from(
+                        changelog_response.data.content,
+                        "base64"
+                    ).toString("utf-8")
+                )
+                : [];
+
+            if (position < 1 || position > list.length + 1) {
+                return await interaction.editReply(
+                    ":x: The given position is incorrect"
+                );
+            }
+
+            // get the level below the level we want to place
+            // +1 because we want the level above this one in the index
+            const levelBelow = noDiv[position + 1];
+            logger.log(`Level below: ${levelBelow}`);
+
+            // find the index of that level in the real list
+            const realAbove = list.indexOf(levelBelow);
+
+            // insert the level above the real list index
+            // -2 because -1 is for indexing and -1 is to put it above levelBelow
+            list.splice(realAbove - 2, 0, filename);
+
+            changelogList.push({
+                date: Math.floor(new Date().getTime() / 1000),
+                action: "placed",
+                name: dbLevel.filename,
+                to_rank: position,
+                from_rank: null,
+                above: list[position] || null,
+                below: list[position - 2] || null,
+            });
+
+            changes.push({
+                path: githubDataPath + "/_list.json",
+                content: JSON.stringify(list, null, "\t"),
+            })
+
+            let commitSha;
+            try {
+                // Get the SHA of the latest commit from the branch
+                const { data: refData } = await octokit.git.getRef({
+                    owner: githubOwner,
+                    repo: githubRepo,
+                    ref: `heads/${githubBranch}`,
+                });
+                commitSha = refData.object.sha;
+            } catch (getRefErr) {
+                logger.info(
+                    `Something went wrong while getting the latest commit SHA: \n${getRefErr}`
+                );
+                return await interaction.editReply(
+                    ":x: Couldn't commit to github, please try again later (getRefError)"
+                );
+            }
+
+            let treeSha;
+            try {
+                // Get the commit using its SHA
+                const { data: commitData } = await octokit.git.getCommit({
+                    owner: githubOwner,
+                    repo: githubRepo,
+                    commit_sha: commitSha,
+                });
+                treeSha = commitData.tree.sha;
+            } catch (getCommitErr) {
+                logger.info(
+                    `Something went wrong while getting the latest commit: \n${getCommitErr}`
+                );
+                return await interaction.editReply(
+                    ":x: Couldn't commit to github, please try again later (getCommitError)"
+                );
+            }
+
+            let newTree;
+            try {
+                // Create a new tree with the changes
+                newTree = await octokit.git.createTree({
+                    owner: githubOwner,
+                    repo: githubRepo,
+                    base_tree: treeSha,
+                    tree: changes.map((change) => ({
+                        path: change.path,
+                        mode: "100644",
+                        type: "blob",
+                        content: change.content,
+                    })),
+                });
+            } catch (createTreeErr) {
+                logger.info(
+                    `Something went wrong while creating a new tree: \n${createTreeErr}`
+                );
+                return await interaction.editReply(
+                    ":x: Couldn't commit to github, please try again later (createTreeError)"
+                );
+            }
+
+            let newCommit;
+            try {
+                // Create a new commit with this tree
+                newCommit = await octokit.git.createCommit({
+                    owner: githubOwner,
+                    repo: githubRepo,
+                    message: `Placed ${dbLevel.name} at ${position} (${interaction.user.tag})`,
+                    tree: newTree.data.sha,
+                    parents: [commitSha],
+                });
+            } catch (createCommitErr) {
+                logger.info(
+                    `Something went wrong while creating a new commit: \n${createCommitErr}`
+                );
+                return await interaction.editReply(
+                    ":x: Couldn't commit to github, please try again later (createCommitError)"
+                );
+            }
+
+            try {
+                // Update the branch to point to the new commit
+                await octokit.git.updateRef({
+                    owner: githubOwner,
+                    repo: githubRepo,
+                    ref: `heads/${githubBranch}`,
+                    sha: newCommit.data.sha,
+                });
+            } catch (updateRefErr) {
+                logger.info(
+                    `Something went wrong while updating the branch reference: \n${updateRefErr}`
+                );
+                return await interaction.editReply(
+                    ":x: Couldn't commit to github, please try again later (updateRefError)"
+                );
+            }
+
+            return await interaction.editReply(":white_check_mark: Restored the level!");
         }
     },
 };
