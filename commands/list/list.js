@@ -461,13 +461,10 @@ module.exports = {
                 )
             );
 
-            logger.log(`List length: ${list.length}`);
             // filter out all levels that are not dividers
             const noDiv = list.filter((level) => !level.startsWith("_"));
 
             const indexBelow = noDiv[position - 1];
-
-            logger.log(indexBelow);
 
             await interaction.editReply("Coding...");
             const githubCode =
@@ -847,7 +844,7 @@ module.exports = {
             );
             return;
         } else if (interaction.options.getSubcommand() === "move") {
-            const { db, octokit } = require("../../index.js");
+            const { db, octokit, cache } = require("../../index.js");
 
             const levelfile = interaction.options.getString("levelname");
             const position = interaction.options.getInteger("position");
@@ -871,31 +868,32 @@ module.exports = {
                     "utf-8"
                 )
             );
-
+            const noDiv = list.filter((level) => !level.startsWith("_"));
             const currentPosition = list.indexOf(levelfile);
+            const lowered = currentPosition < position;
+            const indexBelow = noDiv[position - 1];
+
+            const levelBelow = await cache.levels.findOne({
+                where: { filename: indexBelow },
+            });
+            const levelAbove = await cache.levels.findOne({
+                where: { position: levelBelow.position - 1 },
+            });
+
             if (currentPosition == -1)
                 return await interaction.editReply(
                     ":x: The level you are trying to move is not on the list"
                 );
-
-            const levelAbove =
-                (currentPosition + 1 < position
-                    ? list[position - 1]
-                    : list[position - 2]) ?? null;
-            const levelBelow =
-                (currentPosition + 1 < position
-                    ? list[position]
-                    : list[position - 1]) ?? null;
 
             const moveEmbed = new EmbedBuilder()
                 .setColor(0x8fce00)
                 .setTitle(`Move Level: ${levelfile}`)
                 .setDescription(
                     `**${levelfile}** will be ${
-                        currentPosition + 1 < position ? "lowered" : "raised"
+                        lowered ? "lowered" : "raised"
                     } to **#${position}**, above **${
-                        levelBelow ?? "-"
-                    }** and below **${levelAbove ?? "-"}**`
+                        levelBelow.name ?? "-"
+                    }** and below **${levelAbove.name ?? "-"}**`
                 )
                 .setTimestamp();
 

@@ -54,7 +54,6 @@ module.exports = {
             Buffer.from(list_response.data.content, "base64").toString("utf-8")
         );
 
-        //
         const noDiv = list.filter((level) => !level.startsWith("_"));
 
         const currentPosition = list.indexOf(level.filename) + 1;
@@ -78,6 +77,8 @@ module.exports = {
             );
         }
 
+        const lowered = currentPosition < level.position;
+
         // get the level below the level we want to place
         // +2 because 1 is index offset and 1 is to get the above level
         const levelBelow = noDiv[level.position + 2];
@@ -90,7 +91,7 @@ module.exports = {
 
         // -1 bc indexes
         // insert joke about language with indexing at 1 like maybe they were onto something
-        list.splice(currentPosition - 1, 1);
+        list.splice(lowered ? currentPosition - 1 : currentPosition, 1);
 
         changelogList.push({
             date: Math.floor(new Date().getTime() / 1000),
@@ -179,7 +180,7 @@ module.exports = {
                 owner: githubOwner,
                 repo: githubRepo,
                 message: `${
-                    currentPosition < level.position ? "Lowered" : "Raised"
+                    lowered ? "Lowered" : "Raised"
                 } ${level.filename} from ${currentPosition} to ${
                     level.position
                 } (${interaction.user.tag})`,
@@ -237,7 +238,7 @@ module.exports = {
                     level_above: above?.name || null,
                     level_below: below?.name || null,
                     action:
-                        currentPosition < level.position ? "lowered" : "raised",
+                        lowered ? "lowered" : "raised",
                 });
             }
         } catch (changelogErr) {
