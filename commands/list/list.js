@@ -1491,7 +1491,11 @@ module.exports = {
                 {
                     path: githubDataPath + `/archived/${filename}.json`,
                     content: JSON.stringify(parsedData, null, "\t"),
-                }
+                },
+                {
+                    path: githubDataPath + `/${filename}.json`,
+                    content: null,
+                },
             ];
 
             let commitSha;
