@@ -1,43 +1,43 @@
 {
-	"enableSeparateStaffServer": false,
-	"enableShifts": false,
-	"enablePriorityRole": false,
-	"enableWelcomeMessage": false,
-	"enableChangelogMessage": false,
+    "enableSeparateStaffServer": false,
+    "enableShifts": false,
+    "enablePriorityRole": false,
+    "enableWelcomeMessage": false,
+    "enableChangelogMessage": false,
 
-	"scheduleShifts": "10 0 * * *",
-	"scheduleShiftsReminder": "10 22 * * *",
-	"scheduleCacheUpdate": "30 * * * *",
-	"scheduleChangelog": "00 22 * * *",
-	
-	"githubOwner": "layout-list",
-	"githubRepo": "layout-list",
-	"githubDataPath": "data",
-	"githubBranch": "main",
+    "scheduleShifts": "10 0 * * *",
+    "scheduleShiftsReminder": "10 22 * * *",
+    "scheduleCacheUpdate": "30 * * * *",
+    "scheduleChangelog": "00 22 * * *",
 
-	"clientId": "1315066782213738597",
-	"guildId": "855211848362098699",
-	"staffGuildId": "1212116091451609088",
+    "githubOwner": "layout-list",
+    "githubRepo": "layout-list",
+    "githubDataPath": "data",
+    "githubBranch": "main",
 
-	"priorityRoleID" : "1129273868759089242",
-	"submissionLockRoleID" : "1115681352772235274",
+    "clientId": "1315066782213738597",
+    "guildId": "855211848362098699",
+    "staffGuildId": "1212116091451609088",
 
-	"pendingRecordsID" : "988671478096609290",
-	"priorityRecordsID" : "988671478096609290",
+    "priorityRoleID": "1129273868759089242",
+    "submissionLockRoleID": "1115681352772235274",
 
-	"acceptedRecordsID" : "0",
-	"deniedRecordsID" : "0",
-	"archiveRecordsID" : "1261042731807936575",
-	"recordsID" : "0",
+    "pendingRecordsID": "988671478096609290",
+    "priorityRecordsID": "988671478096609290",
 
-	"changelogID" : "988671478096609290",
-	"changelogRoleID": "1178255860972142662",
+    "acceptedRecordsID": "0",
+    "deniedRecordsID": "0",
+    "archiveRecordsID": "1261042731807936575",
+    "recordsID": "0",
 
-	"guildMemberAddID": "1178399916125597716",
+    "changelogID": "988671478096609290",
+    "changelogRoleID": "1178255860972142662",
 
-	"shiftsReminderID": "1212119449994526801",
-	"shiftsLogsID": "1219796853822849084",
-	"recordsPerWeek": 60,
+    "guildMemberAddID": "1178399916125597716",
 
-	"submissionResultsID": "884614851790524436"
+    "shiftsReminderID": "1212119449994526801",
+    "shiftsLogsID": "1219796853822849084",
+    "recordsPerWeek": 60,
+
+    "submissionResultsID": "884614851790524436"
 }
