@@ -941,6 +941,26 @@ module.exports = {
 			} catch (e) {
 				return await interaction.editReply(`:x: Failed to fetch _list.json: ${e}`)
 			}
+			let fileResponse;
+			try {
+				fileResponse = await octokit.rest.repos.getContent({
+					owner: githubOwner,
+					repo: githubRepo,
+					path: githubDataPath + `/${levelToDelete.filename}.json`,
+					branch: githubBranch,
+				});
+			} catch (fetchError) {
+				logger.info(`Couldn't fetch ${filename}.json: \n${fetchError}`);
+				return await interaction.editReply(`:x: Couldn't fetch ${filename}.json: \n${fetchError}`);
+			}
+
+			let parsedData;
+			try {
+				parsedData = JSON.parse(Buffer.from(fileResponse.data.content, 'base64').toString('utf-8'));
+			} catch (parseError) {
+				logger.info(`Unable to parse data fetched from ${filename}:\n${parseError}`);
+				return await interaction.editReply(`:x: Unable to parse data fetched from ${filename}:\n${parseError}`);
+			}
 
 			const index = list.findIndex(level => level === levelToDelete.filename);
 
@@ -962,6 +982,7 @@ module.exports = {
 				},
 				{
 					path: githubDataPath + `/archived/${filename}.json`,
+					content: JSON.stringify(parsedData, null, '\t'),
 				},
 			]
 
