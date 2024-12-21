@@ -4,7 +4,7 @@ on:
   pull_request:
   workflow_dispatch:
   schedule:
-    - cron: "0 9 * * *"
+    - cron: "0 14 * * *"
 
 jobs:
   eslint:
