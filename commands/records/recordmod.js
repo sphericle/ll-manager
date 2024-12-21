@@ -340,7 +340,7 @@ module.exports = {
         )
         .addSubcommand((subcommand) =>
             subcommand
-                .setName("reorder")
+                .setName("shift")
                 .setDescription("Shift the order of a record on a level")
                 .addStringOption((option) =>
                     option
@@ -356,6 +356,12 @@ module.exports = {
                         .setRequired(true)
                         .setAutocomplete(true)
                 )
+                .addIntegerOption((option) =>
+                    option
+                        .setName("offset")
+                        .setDescription("Amount to shift record by, e.g. +2 moves it up by 2, -1 moves it down by 1")
+                        .setRequired(true)
+                )
         )
         .addSubcommand((subcommand) =>
             subcommand
@@ -363,7 +369,8 @@ module.exports = {
                 .setDescription(
                     "Syncs all the users in the list with the cache"
                 )
-        ),
+        )
+    ,
     async autocomplete(interaction) {
         const focused = await interaction.options.getFocused(true);
 
@@ -2329,8 +2336,6 @@ module.exports = {
                 `Successfully created commit on ${githubBranch} (record update): ${newCommit.data.sha}`
             );
             return await interaction.editReply("This record has been updated!");
-        } else if (interaction.options.getSubcommand() === "reorder") {
-            return await interaction.editReply("Not implemented yet");
         } else if (interaction.options.getSubcommand() === "updateusers") {
             await interaction.deferReply({ ephemeral: true });
             const { cache } = require("../../index.js");
@@ -2369,7 +2374,7 @@ module.exports = {
                 where: { filename: interaction.options.getString("levelname") },
             });
             const username = interaction.options.getString("username");
-            const offset = interaction.options.getInteger("offset");
+            let offset = interaction.options.getInteger("offset");
 
             offset = offset * -1;
 
@@ -2434,8 +2439,11 @@ module.exports = {
                     `:x: The new position is out of bounds`
                 );
             
-            parsedData.records.splice(recordIndex, 1)[0];
-            parsedData.records.splice(recordIndex, 1);
+            logger.log(`Newpos: ${newPos}`)
+            logger.log(parsedData.records[recordIndex])
+
+            const record = parsedData.records.splice(recordIndex, 1)[0];
+            parsedData.records.splice(newPos, 0, record);
 
             await interaction.editReply("Committing...");
 
@@ -2526,7 +2534,7 @@ module.exports = {
                     newCommit = await octokit.git.createCommit({
                         owner: githubOwner,
                         repo: githubRepo,
-                        message: `Removed ${username}'s record from ${filename}.json (${interaction.user.tag})`,
+                        message: `Reordered ${username}'s record on ${filename}.json (${interaction.user.tag})`,
                         tree: newTree.data.sha,
                         parents: [commitSha],
                     });
