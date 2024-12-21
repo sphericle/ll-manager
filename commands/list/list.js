@@ -1127,13 +1127,15 @@ module.exports = {
                     edited = true;
                 }
 
-                for (let creator of parsedData.creators) {
-                    if (creator === olduser) {
-                        creator = newuser;
+                for (let i = 0; i < parsedData.creators.length; i++) {
+                    if (parsedData.creators[i] === olduser) {
+                        parsedData.creators[i] = newuser;
                         edited = true;
                     }
                 }
-
+    
+                
+                
                 for (let record of parsedData.records) {
                     if (record.user === olduser) {
                         record.user = newuser;
