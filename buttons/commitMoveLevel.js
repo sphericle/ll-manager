@@ -53,8 +53,8 @@ module.exports = {
         const list = JSON.parse(
             Buffer.from(list_response.data.content, "base64").toString("utf-8")
         );
-        
-        // 
+
+        //
         const noDiv = list.filter((level) => !level.startsWith("_"));
 
         const currentPosition = list.indexOf(level.filename) + 1;

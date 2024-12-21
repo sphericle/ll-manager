@@ -154,12 +154,10 @@ module.exports = {
         await staffGuild.channels.cache
             .get(deniedRecordsID)
             .send({ embeds: [denyEmbed] });
-        await guild.channels.cache
-            .get(recordsID)
-            .send({
-                content: `<@${record.submitter}>`,
-                embeds: [publicDenyEmbed],
-            });
+        await guild.channels.cache.get(recordsID).send({
+            content: `<@${record.submitter}>`,
+            embeds: [publicDenyEmbed],
+        });
 
         // Remove message from pending
         try {

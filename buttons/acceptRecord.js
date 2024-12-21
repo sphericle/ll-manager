@@ -477,22 +477,18 @@ module.exports = {
                 ? await interaction.client.guilds.fetch(staffGuildId)
                 : guild;
 
-            staffGuild.channels.cache
-                .get(acceptedRecordsID)
-                .send({
-                    content: "",
-                    embeds: [acceptEmbed],
-                    components: [row],
-                });
+            staffGuild.channels.cache.get(acceptedRecordsID).send({
+                content: "",
+                embeds: [acceptEmbed],
+                components: [row],
+            });
             staffGuild.channels.cache
                 .get(archiveRecordsID)
                 .send({ embeds: [archiveEmbed] });
-            guild.channels.cache
-                .get(recordsID)
-                .send({
-                    content: `<@${record.submitter}>`,
-                    embeds: [publicEmbed],
-                });
+            guild.channels.cache.get(recordsID).send({
+                content: `<@${record.submitter}>`,
+                embeds: [publicEmbed],
+            });
             guild.channels.cache
                 .get(recordsID)
                 .send({ content: `${record.completionlink}` });

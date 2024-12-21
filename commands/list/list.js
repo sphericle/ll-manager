@@ -1133,9 +1133,7 @@ module.exports = {
                         edited = true;
                     }
                 }
-    
-                
-                
+
                 for (let record of parsedData.records) {
                     if (record.user === olduser) {
                         record.user = newuser;
