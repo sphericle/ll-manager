@@ -2438,9 +2438,6 @@ module.exports = {
                 return await interaction.editReply(
                     `:x: The new position is out of bounds`
                 );
-            
-            logger.log(`Newpos: ${newPos}`)
-            logger.log(parsedData.records[recordIndex])
 
             const record = parsedData.records.splice(recordIndex, 1)[0];
             parsedData.records.splice(newPos, 0, record);
@@ -2572,7 +2569,7 @@ module.exports = {
                 logger.info(
                     `Successfully created commit on ${githubBranch} (record addition): ${newCommit.data.sha}`
                 );
-                await interaction.editReply("This record has been removed!");
+                await interaction.editReply(":white_check_mark: The record has been moved!");
             } else {
                 // Get file SHA
                 let fileSha;
