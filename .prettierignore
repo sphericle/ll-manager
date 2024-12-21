@@ -1,3 +1,5 @@
-# Ignore all files except .json files
-*
-!*.js
+**/.git
+**/.svn
+**/.hg
+**/node_modules
+**/.github
