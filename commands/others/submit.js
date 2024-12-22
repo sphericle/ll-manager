@@ -145,6 +145,7 @@ module.exports = {
             const opinion = interaction.options.getString("opinion");
             const nong = interaction.options.getAttachment("nong");
 
+            // check if user has 3 submissions already
             const guild = await interaction.client.guilds.fetch(guildId);
 
             const voteChannel = await guild.channels.cache.get(reliableThreadID);
@@ -158,6 +159,9 @@ module.exports = {
             });
 
             logger.log(`Created thread: ${thread.name}`);
+            
+            // add submitter to new db table if not exist, and increment their suvmission count by 1
+            // add level to levels in voting table, set name, submitter, and yes and no votes
         }
         
     },
