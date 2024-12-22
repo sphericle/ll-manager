@@ -149,10 +149,10 @@ module.exports = {
 
             const voteChannel = await guild.channels.cache.get(reliableThreadID);
 
-            const message = `Level name: ${levelname}\nVerifier: ${verifier}\nVerification: ${verification}\nCreators: ${creators}\nAuthor: ${author}\nID: ${id}\nSong name: ${songname}\nDifficulty: ${difficulty}\nPercent: ${percent}\nSong link: ${songlink}\nPassword: ${password}\nRaw: ${raw}\nOpinion: ${opinion}\nNONG: ${nong}`
+            const message = `_Submitted by: <@${interaction.user.id}>_\n\nLevel name: ${levelname}\nVerifier: ${verifier}\nVerification: ${verification}\nCreators: ${creators}\nAuthor: ${author}\nID: ${id}\nSong name: ${songname}\List %: ${percent}\nSong link: ${songlink}\nPassword: ${password}\nRaw: ${raw}\Difficulty opinion: ${opinion}\nNONG: ${nong}`
             const thread = await voteChannel.threads.create({
                 name: `${levelname} 0-0`,
-                autoArchiveDuration: 1440, // 24 hours
+                autoArchiveDuration: 5760, // 4 says
                 reason: `New level submission by ${interaction.user.tag}`,
                 message: message
             });
