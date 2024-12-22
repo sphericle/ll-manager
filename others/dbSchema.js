@@ -174,6 +174,21 @@ module.exports = {
             content: Sequelize.STRING,
             sent: Sequelize.BOOLEAN,
         });
+        db.levelsInVoting = sequelize.define("levelsInVoting", {
+            levelname: Sequelize.STRING,
+            submitter: Sequelize.STRING,
+            discordid: Sequelize.STRING,
+            yeses: Sequelize.INTEGER,
+            nos: Sequelize.INTEGER,
+        });
+        db.submitters = sequelize.define("submitters", {
+            discordid: {
+                type: Sequelize.STRING,
+                unique: true,
+            },
+            submissions: Sequelize.INTEGER,
+            dmFlag: Sequelize.BOOLEAN,
+        });
 
         return db;
     },

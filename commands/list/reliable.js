@@ -72,8 +72,9 @@ module.exports = {
         await interaction.deferReply({ ephemeral: true });
 
         if (interaction.options.getSubcommand() === "yes") {
+            const { db } = require("../../index.js");
             // if the current channel is not a thread
-            if (!interaction.channel.isThread()) {
+            if (!await interaction.channel.isThread()) {
                 return await interaction.editReply(
                     "You must be in a thread to use this command"
                 );
@@ -81,7 +82,7 @@ module.exports = {
 
             await interaction.editReply("Fetching thread info...");
             // get the thread name
-            const text = interaction.channel.name;
+            const text = await interaction.channel.name;
             const matchLevelName = text.match(/^(.*)\s\d+-\d+$/);
             const matchYes = text.match(/(\d+)-\d+$/);
             const matchNo = text.match(/\d+-(\d+)$/);
@@ -103,6 +104,30 @@ module.exports = {
                     await interaction.channel.setName(
                         `${matchLevelName[1]} ${count}-${matchNo[1]}`
                     ); // Set the channel name to the same thing but with the added yes
+
+                    
+                    // update entry in db
+                    await db.levelsInVoting.update(
+                        { yeses: count },
+                        { where: { discordid: await interaction.channel.id } }
+                    );
+
+                    const dbEntry = await db.levelsInVoting.findOne({
+                        where: { discordid: await interaction.channel.id },
+                    });
+
+                    const entry = dbEntry.dataValues;
+
+                    const submitterDb = await db.submitters.findOne({
+                        where: { discordid: entry.submitter },
+                    });
+
+                    // check if the user has dmFlag set to true
+                    if (submitterDb.dataValues.dmFlag) {
+                        // get user by id of entry.submitter
+                        const submitter = await interaction.guild.members.fetch(entry.submitter);
+                        await submitter.send(`Your level "${matchLevelName[1]}" has received a new yes vote!\nThe vote is now at ${count}-${matchNo[1]}\n_To disable these messages, use the \`/vote dm\` command._`);
+                    }
                 } catch (e) {
                     logger.error(`Error: ${e}`);
                     return await interaction.editReply(
@@ -115,6 +140,7 @@ module.exports = {
                 );
             }
 
+            logger.log(await interaction.channel.id)
             // ping user if needed
             return await interaction.editReply({
                 content: "Updated thread name!",
