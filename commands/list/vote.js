@@ -106,8 +106,8 @@ module.exports = {
                         .setName("status")
                         .setDescription("Whether to enable or disable DMs")
                         .addChoices(
-                            { name: "Enable", value: 0 },
-                            { name: "Disable", value: 1 }
+                            { name: "Enable", value: 1 },
+                            { name: "Disable", value: 0 }
                         )
                         .setRequired(true)
                 )
@@ -134,7 +134,7 @@ module.exports = {
         const focused = interaction.options.getFocused(true);
         const { db } = require("../../index.js");
         const subcommand = interaction.options.getSubcommand();
-        
+        if (subcommand === "status") {
             const levels = await db.levelsInVoting.findAll({ where: { submitter: interaction.user.id } })
             return await interaction.respond(
                 levels
@@ -146,6 +146,7 @@ module.exports = {
                     .slice(0, 25)
                     .map((lvl) => ({ name: lvl.levelname, value: `${lvl.discordid}` }))
             );
+        }
     },
     async execute(interaction) {
         await interaction.deferReply({ ephemeral: true });
@@ -229,7 +230,12 @@ module.exports = {
         } else if (subcommand === "dm") {
             const { db } = require("../../index.js");
 
-            const status = interaction.options.getBoolean("status");
+            const numStatus = await interaction.options.getInteger("status");
+
+            const status = numStatus === 1 ? true : false;
+
+            logger.log(status);
+            
 
             try {
                 await db.submitters.update(
