@@ -444,11 +444,31 @@ module.exports = {
                 );
             const filename = level.filename;
             // Get cached user
-            const user = await cache.users.findOne({
-                where: { name: username },
-            });
-            if (!user) {
-                await createUser(interaction, [username]);
+            let user;
+            try {
+                user = await cache.users.findOne({
+                    where: { name: username },
+                });
+                if (!user) {
+                    await interaction.editReply("No user found, attempting to create a new one...")
+                    await createUser(interaction, [username]);
+                    // sorry
+                    user = await cache.users.findOne({
+                        where: { name: username },
+                    });
+                    if (!user) {
+                        logger.error(`Error automatically creating user on record submit`)
+                        return await interaction.editReply(
+                            `:x: Error creating a new user, try creating the user manually with /createuser`
+                        );
+                    }
+                }
+            } catch (error) {
+                logger.error(`Error automatically creating user on record submit: ${error}`)
+                return await interaction.editReply(
+                    `:x: Error creating a new user: ${error} (show this to sphericle!)\n
+                    Try creating the user manually with /createuser`
+                );
             }
             // Check list banned
             await interaction.editReply(
@@ -1066,9 +1086,9 @@ module.exports = {
                     ? `,\n\t\t"enjoyment": ${newEnjoyment}`
                     : "") +
                 (newDevice == "Mobile" ? ',\n\t\t"mobile": true\n}\n' : "\n}");
-
-            // Create embed to send in archive with all record info
-            const archiveEmbed = new EmbedBuilder()
+            
+            // Create embed to send in public channel
+            const publicEmbed = new EmbedBuilder()
                 .setColor(0x8fce00)
                 .setTitle(`:white_check_mark: ${level.name}`)
                 .addFields(
@@ -1084,33 +1104,13 @@ module.exports = {
                         inline: true,
                     },
                     { name: "Device", value: `${newDevice}`, inline: true },
-                    {
-                        name: "Link",
-                        value: `${oldRecord.completionlink}`,
-                        inline: true,
-                    },
-                    {
-                        name: "Raw link",
-                        value: `${
-                            !oldRecord.raw || oldRecord.raw == ""
-                                ? "None"
-                                : oldRecord.raw
-                        }`,
-                        inline: true,
-                    },
+                    { name: "Link", value: `${newDevice}`, inline: true },
                     {
                         name: "Enjoyment",
                         value: `${newEnjoyment || "None"}`,
                         inline: true,
                     },
                     { name: "FPS", value: `${newFPS}`, inline: true },
-                    {
-                        name: "Additional Info",
-                        value: `${
-                            !newNotes || newNotes == "" ? "None" : newNotes
-                        }`,
-                        inline: true,
-                    }
                 )
                 .setTimestamp();
 
@@ -1412,7 +1412,7 @@ module.exports = {
             // staffGuild.channels.cache.get(acceptedRecordsID).send({ content: '', embeds: [acceptEmbed], components: [row] });
             staffGuild.channels.cache
                 .get(archiveRecordsID)
-                .send({ embeds: [archiveEmbed] });
+                .send({ embeds: [publicEmbed] });
 
             // Check if we need to send in dms as well
             const settings = await db.staffSettings.findOne({
