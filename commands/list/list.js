@@ -116,6 +116,13 @@ module.exports = {
                             "The minimum percent players need to get a record on this level (list percent)"
                         )
                 )
+                .addIntegerOption((option) =>
+                    option
+                        .setName("enjoyment")
+                        .setDescription(
+                            "The verifier's enjoyment on this level (1-10)"
+                        )
+                )
         )
         .addSubcommand((subcommand) =>
             subcommand
@@ -199,7 +206,7 @@ module.exports = {
                 )
                 .addIntegerOption((option) =>
                     option
-                        .setName("enjoyment")
+                        .setName("author")
                         .setDescription(
                             "The name of the person who uploaded the level on GD"
                         )
@@ -340,6 +347,13 @@ module.exports = {
                             "The minimum percent players need to get a record on this level (list percent)"
                         )
                 )
+                .addIntegerOption((option) =>
+                    option
+                        .setName("enjoyment")
+                        .setDescription(
+                            "The verifier's enjoyment on this level (1-10)"
+                        )
+                )
         )
         .addSubcommand((subcommand) =>
             subcommand
@@ -468,11 +482,17 @@ module.exports = {
             const difficulty = interaction.options.getInteger("difficulty");
             const songName = interaction.options.getString("songname");
             const songLink = interaction.options.getString("songlink") || null;
+            const enjoyment = interaction.options.getInteger("enjoyment") || null;
 
             const finalCreators = [];
             for (const creatorName of creatorNames) {
                 finalCreators.push(creatorName.trim()); // lol
             }
+
+            if (enjoyment && (enjoyment < 1 || enjoyment > 10))
+                return await interaction.editReply(
+                    ":x: Couldn't add the record: Enjoyment rating must be between 1 and 10"
+                );
 
             let list_response;
             try {
@@ -505,6 +525,7 @@ module.exports = {
                     finalCreators
                 )},\n\t"verifier": "${verifierName}",\n\t"verification": "${verification}",\n\t"percentToQualify": ${percent},\n\t"password": "${password}",\n\t"difficulty": ${difficulty},\n\t"song": "${songName}",` +
                 (songLink !== null ? `\n\t"songLink": "${songLink}",` : "") +
+                (enjoyment !== null ? `\n\t"enjoyment": ${enjoyment},` : "") +
                 `\n\t"records" : []\n}`;
 
             const levelBelow = await cache.levels.findOne({

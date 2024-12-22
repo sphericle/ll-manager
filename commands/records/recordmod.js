@@ -19,8 +19,7 @@ const {
     githubOwner,
     githubRepo,
     githubDataPath,
-    githubBranch,
-    recordsID
+    githubBranch
 } = require("../../config.json");
 const { ChartJSNodeCanvas } = require("chartjs-node-canvas");
 const logger = require("log4js").getLogger();
@@ -587,43 +586,6 @@ module.exports = {
                 );
 
             await interaction.editReply(`Writing code...`);
-
-            // Create embed to send in archive with all record info
-            const archiveEmbed = new EmbedBuilder()
-                .setColor(0x8fce00)
-                .setTitle(`:white_check_mark: ${level.name}`)
-                .addFields(
-                    { name: "Percent", value: `${percent}%`, inline: true },
-                    {
-                        name: "Record holder",
-                        value: `${user.name}`,
-                        inline: true,
-                    },
-                    {
-                        name: "Record added by",
-                        value: `${interaction.user}`,
-                        inline: true,
-                    },
-                    { name: "Device", value: `${device}`, inline: true },
-                    { name: "Link", value: `${linkStr}`, inline: true },
-                    {
-                        name: "Raw link",
-                        value: `${!rawStr || rawStr == "" ? "None" : rawStr}`,
-                        inline: true,
-                    },
-                    {
-                        name: "Enjoyment",
-                        value: `${enjoyment || "None"}`,
-                        inline: true,
-                    },
-                    { name: "FPS", value: `${fps}`, inline: true },
-                    {
-                        name: "Additional Info",
-                        value: `${!note || note == "" ? "None" : note}`,
-                        inline: true,
-                    }
-                )
-                .setTimestamp();
 
             // Create embed to send in public channel
             const publicEmbed = new EmbedBuilder()
