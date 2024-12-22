@@ -3,7 +3,7 @@ const { guildId, reliableThreadID } = require("../../config.json");
 const logger = require("log4js").getLogger();
 
 module.exports = {
-    enabled: false,
+    enabled: true,
     data: new SlashCommandBuilder()
         .setName("vote")
         .setDescription("Bot ping measurements")
