@@ -115,6 +115,7 @@ module.exports = {
                 );
             }
 
+            // ping user if needed
             return await interaction.editReply({
                 content: "Updated thread name!",
                 ephemeral: true,
@@ -163,6 +164,7 @@ module.exports = {
                 );
             }
 
+            // ping user if needed
             return await interaction.editReply("The thread has been updated!");
         } else if (
             interaction.options.getSubcommand() === "accept" ||
