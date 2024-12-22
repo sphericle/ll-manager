@@ -634,6 +634,8 @@ module.exports = {
                 interaction.options.getInteger("difficulty") || null;
             const songName = interaction.options.getString("songname") || null;
             const songLink = interaction.options.getString("songlink") || null;
+            const enjoyment = interaction.options.getInteger("enjoyment") || null;
+            
 
             const levelToEdit = await cache.levels.findOne({
                 where: { filename: level },
@@ -689,6 +691,7 @@ module.exports = {
             if (difficulty !== null) parsedData.difficulty = difficulty;
             if (songName !== null) parsedData.song = songName;
             if (songLink !== null) parsedData.songLink = songLink;
+            if (enjoyment !== null) parsedData.enjoyment = enjoyment;
 
             let existing = true;
 
@@ -703,7 +706,8 @@ module.exports = {
                 percent !== null ||
                 difficulty !== null ||
                 songName !== null ||
-                songLink !== null
+                songLink !== null ||
+                enjoyment !== null
             )
                 existing = false;
 
