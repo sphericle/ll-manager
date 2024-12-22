@@ -20,6 +20,7 @@ const {
     githubRepo,
     githubDataPath,
     githubBranch,
+    recordsID
 } = require("../../config.json");
 const { ChartJSNodeCanvas } = require("chartjs-node-canvas");
 const logger = require("log4js").getLogger();
@@ -104,24 +105,17 @@ module.exports = {
                 )
                 .addStringOption((option) =>
                     option
-                        .setName("raw")
+                        .setName("discord")
                         .setDescription(
-                            "Link to your raw footage (Optional, required for top 400 levels)"
+                            "The person to ping in the records channel"
                         )
-                        .setMaxLength(1024)
-                )
-                .addIntegerOption((option) =>
-                    option
-                        .setName("ldm")
-                        .setDescription(
-                            "ID for the external LDM you used (Optional)"
-                        )
+                        .setAutocomplete(true)
                 )
                 .addStringOption((option) =>
                     option
-                        .setName("additionalnotes")
+                        .setName("raw")
                         .setDescription(
-                            "Any other info you'd like to share with us (Optional)"
+                            "Link to your raw footage (Optional, required for top 400 levels)"
                         )
                         .setMaxLength(1024)
                 )
@@ -167,25 +161,9 @@ module.exports = {
                 )
                 .addStringOption((option) =>
                     option
-                        .setName("raw")
-                        .setDescription(
-                            "Link to your raw footage (Optional, required for extremes and above)"
-                        )
-                        .setMaxLength(1024)
-                )
-                .addStringOption((option) =>
-                    option
                         .setName("additionalnotes")
                         .setDescription(
                             "Any other info you'd like to share with us (Optional)"
-                        )
-                        .setMaxLength(1024)
-                )
-                .addStringOption((option) =>
-                    option
-                        .setName("modmenu")
-                        .setDescription(
-                            "Name of the mod menu you used, if any (Megahack, Eclipse, GDH, QOLMod, etc..), or None/Vanilla"
                         )
                         .setMaxLength(1024)
                 )
@@ -409,6 +387,25 @@ module.exports = {
                     .slice(0, 25)
                     .map((user) => ({ name: user.name, value: user.name }))
             );
+        } else if (focused.name === "discord") {
+            const members = interaction.guild.members.cache;
+            const filtered = members
+                .filter((member) =>
+                    member.user.username
+                        .toLowerCase()
+                        .includes(focused.value.toLowerCase())
+                )
+                .map((member) => {
+                    return {
+                        name: member.user.username,
+                        value: member.id,
+                    };
+                });
+            await interaction.respond(
+                filtered.slice(0, 25).map((user) => {
+                    return { name: user.name, value: user.value };
+                })
+            );
         }
     },
     async execute(interaction) {
@@ -429,6 +426,13 @@ module.exports = {
             const linkStr = interaction.options.getString("completionlink");
             const note = interaction.options.getString("additionalnotes");
             const rawStr = interaction.options.getString("raw");
+            const userToPing = interaction.options.getString("discord");
+
+            if (userToPing && isNaN(parseInt(userToPing))) {
+                return await interaction.editReply(
+                    ":x: The provided user is invalid, make sure you pick a suggested option!"
+                );
+            }
 
             const level = await cache.levels.findOne({
                 where: {
@@ -622,6 +626,31 @@ module.exports = {
                 .setTimestamp();
 
             // Create embed to send in public channel
+            const publicEmbed = new EmbedBuilder()
+                .setColor(0x8fce00)
+                .setTitle(`:white_check_mark: ${level.name}`)
+                .addFields(
+                    { name: "Percent", value: `${percent}%`, inline: true },
+                    {
+                        name: "Record holder",
+                        value: `${user.name}`,
+                        inline: true,
+                    },
+                    {
+                        name: "Record added by",
+                        value: `${interaction.user}`,
+                        inline: true,
+                    },
+                    { name: "Device", value: `${device}`, inline: true },
+                    { name: "Link", value: `${linkStr}`, inline: true },
+                    {
+                        name: "Enjoyment",
+                        value: `${enjoyment || "None"}`,
+                        inline: true,
+                    },
+                    { name: "FPS", value: `${fps}`, inline: true },
+                )
+                .setTimestamp();
 
             logger.info(
                 `${interaction.user.tag} (${interaction.user.id}) accepted record of ${level.name} for ${user.name}`
@@ -854,7 +883,8 @@ module.exports = {
             // staffGuild.channels.cache.get(acceptedRecordsID).send({ content: '', embeds: [acceptEmbed], components: [row] });
             staffGuild.channels.cache
                 .get(archiveRecordsID)
-                .send({ embeds: [archiveEmbed] });
+                .send({ content: userToPing ? `<@${userToPing}>` : '', embeds: [publicEmbed] });
+
 
             // Check if we need to send in dms as well
             const settings = await db.staffSettings.findOne({
