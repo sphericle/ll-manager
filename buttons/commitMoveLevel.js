@@ -179,11 +179,11 @@ module.exports = {
             newCommit = await octokit.git.createCommit({
                 owner: githubOwner,
                 repo: githubRepo,
-                message: `${
-                    lowered ? "Lowered" : "Raised"
-                } ${level.filename} from ${currentPosition} to ${
-                    level.position
-                } (${interaction.user.tag})`,
+                message: `${lowered ? "Lowered" : "Raised"} ${
+                    level.filename
+                } from ${currentPosition} to ${level.position} (${
+                    interaction.user.tag
+                })`,
                 tree: newTree.data.sha,
                 parents: [commitSha],
             });
@@ -237,8 +237,7 @@ module.exports = {
                     new_position: level.position,
                     level_above: above?.name || null,
                     level_below: below?.name || null,
-                    action:
-                        lowered ? "lowered" : "raised",
+                    action: lowered ? "lowered" : "raised",
                 });
             }
         } catch (changelogErr) {

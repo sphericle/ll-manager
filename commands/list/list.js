@@ -423,7 +423,6 @@ module.exports = {
                     .slice(0, 25)
                     .map((level) => ({ name: level.name, value: level.name }))
             );
-
         } else if (subcommand === "restore") {
             let levels = await cache.archived.findAll({
                 where: {
@@ -437,7 +436,11 @@ module.exports = {
             return await interaction.respond(
                 levels
                     .slice(0, 25)
-                    .map((level) => ({ name: level.name, value: level.filename })))
+                    .map((level) => ({
+                        name: level.name,
+                        value: level.filename,
+                    }))
+            );
         } else
             return await interaction.respond(
                 (
@@ -482,7 +485,8 @@ module.exports = {
             const difficulty = interaction.options.getInteger("difficulty");
             const songName = interaction.options.getString("songname");
             const songLink = interaction.options.getString("songlink") || null;
-            const enjoyment = interaction.options.getInteger("enjoyment") || null;
+            const enjoyment =
+                interaction.options.getInteger("enjoyment") || null;
 
             const finalCreators = [];
             for (const creatorName of creatorNames) {
@@ -538,7 +542,8 @@ module.exports = {
                 .setColor(0x8fce00)
                 .setTitle(`Place Level: ${levelname}`)
                 .setDescription(
-                    `**${levelname}** will be placed at **#${position}**, above **${levelBelow ? levelBelow.name : "-"
+                    `**${levelname}** will be placed at **#${position}**, above **${
+                        levelBelow ? levelBelow.name : "-"
                     }** and below **${levelAbove ? levelAbove.name : "-"}**`
                 )
                 .addFields(
@@ -550,10 +555,11 @@ module.exports = {
                     },
                     {
                         name: "Creators:",
-                        value: `${rawCreators
+                        value: `${
+                            rawCreators
                                 ? rawCreators.slice(0, 1023)
                                 : "None provided"
-                            }`,
+                        }`,
                         inline: true,
                     },
                     {
@@ -634,8 +640,8 @@ module.exports = {
                 interaction.options.getInteger("difficulty") || null;
             const songName = interaction.options.getString("songname") || null;
             const songLink = interaction.options.getString("songlink") || null;
-            const enjoyment = interaction.options.getInteger("enjoyment") || null;
-            
+            const enjoyment =
+                interaction.options.getInteger("enjoyment") || null;
 
             const levelToEdit = await cache.levels.findOne({
                 where: { filename: level },
@@ -888,7 +894,8 @@ module.exports = {
             }
 
             logger.info(
-                `${interaction.user.tag} (${interaction.user.id
+                `${interaction.user.tag} (${
+                    interaction.user.id
                 }) submitted ${interaction.options.getString(
                     "levelname"
                 )} for ${interaction.options.getString("username")}`
@@ -944,8 +951,10 @@ module.exports = {
                 .setColor(0x8fce00)
                 .setTitle(`Move Level: ${levelfile}`)
                 .setDescription(
-                    `**${levelfile}** will be ${lowered ? "lowered" : "raised"
-                    } to **#${position}**, above **${levelBelow.name ?? "-"
+                    `**${levelfile}** will be ${
+                        lowered ? "lowered" : "raised"
+                    } to **#${position}**, above **${
+                        levelBelow.name ?? "-"
                     }** and below **${levelAbove.name ?? "-"}**`
                 )
                 .setTimestamp();
@@ -1014,7 +1023,8 @@ module.exports = {
                 .setColor(0x8fce00)
                 .setTitle(`Move to Legacy: ${levelfile}`)
                 .setDescription(
-                    `**${levelfile}** will be moved from **#${currentPosition + 1
+                    `**${levelfile}** will be moved from **#${
+                        currentPosition + 1
                     }** to the top of the **legacy** list (**#${list.length}**)`
                 )
                 .setTimestamp();
@@ -1079,7 +1089,8 @@ module.exports = {
                 .setColor(0x8fce00)
                 .setTitle(`Move Level: ${levelfile}`)
                 .setDescription(
-                    `**${levelfile}** will be moved from **legacy** to **#${position}**, above **${levelBelow ?? "-"
+                    `**${levelfile}** will be moved from **legacy** to **#${position}**, above **${
+                        levelBelow ?? "-"
                     }** and below **${levelAbove ?? "-"}**`
                 )
                 .setTimestamp();
@@ -1143,7 +1154,7 @@ module.exports = {
                 if (!listFilename.startsWith("_"))
                     logger.error(
                         "Git - " +
-                        `Unable to parse data from ${listFilename}:\n${parseError}`
+                            `Unable to parse data from ${listFilename}:\n${parseError}`
                     );
                 return -1;
             }
@@ -1161,7 +1172,7 @@ module.exports = {
                     if (!filename.startsWith("_"))
                         logger.error(
                             "Git - " +
-                            `Unable to parse data from ${filename}.json:\n${parseError}`
+                                `Unable to parse data from ${filename}.json:\n${parseError}`
                         );
                     continue;
                 }
@@ -1211,7 +1222,7 @@ module.exports = {
                 if (!flagsFilename.startsWith("_"))
                     logger.error(
                         "Git - " +
-                        `Unable to parse data from ${listFilename}:\n${parseError}`
+                            `Unable to parse data from ${listFilename}:\n${parseError}`
                     );
                 return;
             }
@@ -1629,7 +1640,9 @@ module.exports = {
                 );
             }
             try {
-                cache.levels.destroy({ where: { filename: levelToDelete.filename } });
+                cache.levels.destroy({
+                    where: { filename: levelToDelete.filename },
+                });
             } catch (e) {
                 return await interaction.editReply(
                     `:x: Error removing level from database: ${e}`
@@ -1644,7 +1657,9 @@ module.exports = {
             const levelname = interaction.options.getString("levelname");
             const position = interaction.options.getInteger("position");
 
-            let dbLevel = await cache.archived.findOne({ where: { filename: levelname } });
+            let dbLevel = await cache.archived.findOne({
+                where: { filename: levelname },
+            });
             if (!dbLevel) {
                 return await interaction.editReply(
                     ":x: The level you are trying to restore does not exist in the database"
@@ -1652,7 +1667,7 @@ module.exports = {
             }
             const filename = dbLevel.filename;
 
-            let changes = []
+            let changes = [];
             let fileResponse;
             try {
                 fileResponse = await octokit.rest.repos.getContent({
@@ -1668,15 +1683,16 @@ module.exports = {
                 );
             }
 
-            const parsedData = JSON.parse(Buffer.from(fileResponse.data.content, "base64").toString(
-                "utf-8"
-            ))
+            const parsedData = JSON.parse(
+                Buffer.from(fileResponse.data.content, "base64").toString(
+                    "utf-8"
+                )
+            );
             // move the file back to the main folder
             changes.push({
                 path: githubDataPath + `/${filename}.json`,
                 content: JSON.stringify(parsedData, null, "\t"),
             });
-
 
             let list_response;
             try {
@@ -1727,11 +1743,11 @@ module.exports = {
 
             const changelogList = changelog_response
                 ? JSON.parse(
-                    Buffer.from(
-                        changelog_response.data.content,
-                        "base64"
-                    ).toString("utf-8")
-                )
+                      Buffer.from(
+                          changelog_response.data.content,
+                          "base64"
+                      ).toString("utf-8")
+                  )
                 : [];
 
             if (position < 1 || position > list.length + 1) {
@@ -1765,7 +1781,7 @@ module.exports = {
             changes.push({
                 path: githubDataPath + "/_list.json",
                 content: JSON.stringify(list, null, "\t"),
-            })
+            });
 
             let commitSha;
             try {
@@ -1862,7 +1878,9 @@ module.exports = {
                 );
             }
 
-            return await interaction.editReply(":white_check_mark: Restored the level!");
+            return await interaction.editReply(
+                ":white_check_mark: Restored the level!"
+            );
         }
     },
 };

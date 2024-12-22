@@ -19,7 +19,7 @@ const {
     githubOwner,
     githubRepo,
     githubDataPath,
-    githubBranch
+    githubBranch,
 } = require("../../config.json");
 const { ChartJSNodeCanvas } = require("chartjs-node-canvas");
 const logger = require("log4js").getLogger();
@@ -336,7 +336,9 @@ module.exports = {
                 .addIntegerOption((option) =>
                     option
                         .setName("offset")
-                        .setDescription("Amount to shift record by, e.g. +2 moves it up by 2, -1 moves it down by 1")
+                        .setDescription(
+                            "Amount to shift record by, e.g. +2 moves it up by 2, -1 moves it down by 1"
+                        )
                         .setRequired(true)
                 )
         )
@@ -346,8 +348,7 @@ module.exports = {
                 .setDescription(
                     "Syncs all the users in the list with the cache"
                 )
-        )
-    ,
+        ),
     async autocomplete(interaction) {
         const focused = await interaction.options.getFocused(true);
 
@@ -450,21 +451,27 @@ module.exports = {
                     where: { name: username },
                 });
                 if (!user) {
-                    await interaction.editReply("No user found, attempting to create a new one...")
+                    await interaction.editReply(
+                        "No user found, attempting to create a new one..."
+                    );
                     await createUser(interaction, [username]);
                     // sorry
                     user = await cache.users.findOne({
                         where: { name: username },
                     });
                     if (!user) {
-                        logger.error(`Error automatically creating user on record submit`)
+                        logger.error(
+                            `Error automatically creating user on record submit`
+                        );
                         return await interaction.editReply(
                             `:x: Error creating a new user, try creating the user manually with /createuser`
                         );
                     }
                 }
             } catch (error) {
-                logger.error(`Error automatically creating user on record submit: ${error}`)
+                logger.error(
+                    `Error automatically creating user on record submit: ${error}`
+                );
                 return await interaction.editReply(
                     `:x: Error creating a new user: ${error} (show this to sphericle!)\n
                     Try creating the user manually with /createuser`
@@ -630,7 +637,7 @@ module.exports = {
                         value: `${enjoyment || "None"}`,
                         inline: true,
                     },
-                    { name: "FPS", value: `${fps}`, inline: true },
+                    { name: "FPS", value: `${fps}`, inline: true }
                 )
                 .setTimestamp();
 
@@ -865,8 +872,10 @@ module.exports = {
             // staffGuild.channels.cache.get(acceptedRecordsID).send({ content: '', embeds: [acceptEmbed], components: [row] });
             staffGuild.channels.cache
                 .get(archiveRecordsID)
-                .send({ content: userToPing ? `<@${userToPing}>` : '', embeds: [publicEmbed] });
-
+                .send({
+                    content: userToPing ? `<@${userToPing}>` : "",
+                    embeds: [publicEmbed],
+                });
 
             // Check if we need to send in dms as well
             const settings = await db.staffSettings.findOne({
@@ -1086,7 +1095,7 @@ module.exports = {
                     ? `,\n\t\t"enjoyment": ${newEnjoyment}`
                     : "") +
                 (newDevice == "Mobile" ? ',\n\t\t"mobile": true\n}\n' : "\n}");
-            
+
             // Create embed to send in public channel
             const publicEmbed = new EmbedBuilder()
                 .setColor(0x8fce00)
@@ -1110,7 +1119,7 @@ module.exports = {
                         value: `${newEnjoyment || "None"}`,
                         inline: true,
                     },
-                    { name: "FPS", value: `${newFPS}`, inline: true },
+                    { name: "FPS", value: `${newFPS}`, inline: true }
                 )
                 .setTimestamp();
 
@@ -2370,8 +2379,6 @@ module.exports = {
 
             offset = offset * -1;
 
-
-
             if (!level)
                 return await interaction.editReply(
                     ":x: Couldn't find the level"
@@ -2561,7 +2568,9 @@ module.exports = {
                 logger.info(
                     `Successfully created commit on ${githubBranch} (record addition): ${newCommit.data.sha}`
                 );
-                await interaction.editReply(":white_check_mark: The record has been moved!");
+                await interaction.editReply(
+                    ":white_check_mark: The record has been moved!"
+                );
             } else {
                 // Get file SHA
                 let fileSha;

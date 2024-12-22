@@ -288,10 +288,11 @@ async function createUser(interaction, user) {
             newCommit = await octokit.git.createCommit({
                 owner: githubOwner,
                 repo: githubRepo,
-                message: `${interaction.user.tag
-                    } created a new user: ${interaction.options.getString(
-                        "username"
-                    )}`,
+                message: `${
+                    interaction.user.tag
+                } created a new user: ${interaction.options.getString(
+                    "username"
+                )}`,
                 tree: newTree.data.sha,
                 parents: [commitSha],
             });
@@ -325,7 +326,8 @@ async function createUser(interaction, user) {
         cache.updateUsers();
 
         logger.info(
-            `${interaction.user.tag} (${interaction.user.id
+            `${interaction.user.tag} (${
+                interaction.user.id
             }) created a new user: ${interaction.options.getString("username")}`
         );
         await interaction.editReply(
@@ -342,7 +344,9 @@ module.exports = {
     enabled: true,
     data: new SlashCommandBuilder()
         .setName("createuser")
-        .setDescription("Debug command to manually create a user in case the record command fails to.")
+        .setDescription(
+            "Debug command to manually create a user in case the record command fails to."
+        )
         .addStringOption((option) =>
             option
                 .setName("username")
@@ -351,6 +355,9 @@ module.exports = {
         ),
     async execute(interaction) {
         await interaction.deferReply({ ephemeral: true });
-        return await createUser(interaction, interaction.options.getString("username"));
+        return await createUser(
+            interaction,
+            interaction.options.getString("username")
+        );
     },
 };
