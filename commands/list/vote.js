@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require("discord.js");
-const { guildId, reliableThreadID } = require("../../config.json");
+const { guildId, reliableThreadID, staffRole } = require("../../config.json");
 const logger = require("log4js").getLogger();
 
 module.exports = {
@@ -131,7 +131,13 @@ module.exports = {
         const { db } = require("../../index.js");
         const subcommand = interaction.options.getSubcommand();
         if (subcommand === "status") {
-            const levels = await db.levelsInVoting.findAll({
+            // if user has staff role, show all levels in voting
+            let levels;
+            if (await interaction.member.roles.cache.has(staffRole)) {
+                levels = await db.levelsInVoting.findAll();
+            }
+
+            else levels = await db.levelsInVoting.findAll({
                 where: { submitter: interaction.user.id },
             });
             return await interaction.respond(
