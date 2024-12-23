@@ -100,18 +100,6 @@ async function start() {
     } catch (e) {
         logger.error(`Error setting presence: ${e}`);
     }
-
-    db.levelsInVoting.destroy({
-        where: {
-            discordid: "1319870418168840203"
-        }
-    });
-    
-    db.levelsInVoting.destroy({
-        where: {
-            discordid: "1316901742012530719"
-        }
-    });
     
 }
 
