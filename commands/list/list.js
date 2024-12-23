@@ -418,15 +418,8 @@ module.exports = {
         )
         .addSubcommand((subcommand) =>
             subcommand
-                .setName("voteinsert")
-                .setDescription("debug")
-                .addStringOption((option) =>
-                    option
-                        .setName("submitteruser")
-                        .setDescription("The name of the user to insert")
-                        .setRequired(true)
-                        .setAutocomplete(true)
-                )
+                .setName("setvote")
+                .setDescription("Update the information of a level in voting")
         ),
     async autocomplete(interaction) {
         const focused = interaction.options.getFocused(true);
@@ -2017,6 +2010,30 @@ module.exports = {
                 nos: matchNo[1],
             });
             interaction.editReply(":white_check_mark: Vote inserted!");
+        } else if (interaction.options.getSubcommand() === "setvote") {
+            const { db } = require("../../index.js");
+
+            const text = await interaction.channel.name;
+            const matchLevelName = text.match(/^(.*)\s\d+-\d+$/);
+            const matchYes = text.match(/(\d+)-\d+$/);
+            const matchNo = text.match(/\d+-(\d+)$/);
+            
+            const level = await db.levelsInVoting.findOne({
+                where: { discordid: interaction.channel.id },
+            });
+
+            if (!level) return await interaction.editReply(":x: No level found in voting channel, try creating it with /voteinsert");
+
+            db.levelsInVoting.update({
+                levelname: matchLevelName[1],
+                yeses: matchYes[1],
+                nos: matchNo[1],
+            }, {
+                    where: {
+                        discordid: interaction.channel.id
+                    }
+                }
+            );
         }
     },
 };

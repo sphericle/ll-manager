@@ -133,9 +133,8 @@ module.exports = {
         if (subcommand === "status") {
             // if user has staff role, show all levels in voting
             let levels;
-            if (await interaction.member.roles.cache.has(staffRole)) {
+            if (await interaction.member.roles.cache.has(staffRole))
                 levels = await db.levelsInVoting.findAll();
-            }
 
             else levels = await db.levelsInVoting.findAll({
                 where: { submitter: interaction.user.id },
@@ -248,8 +247,6 @@ module.exports = {
             const numStatus = await interaction.options.getInteger("status");
 
             const status = numStatus === 1 ? true : false;
-
-            logger.log(status);
 
             const submitter = await db.submitters.findOne({
                 where: { discordid: interaction.user.id },
