@@ -359,6 +359,8 @@ module.exports = {
                 const acceptedSheet = workbook.addWorksheet("Accepted Records");
                 const deniedSheet = workbook.addWorksheet("Denied Records");
                 const dailyStatsSheet = workbook.addWorksheet("Daily Stats");
+                const submitters = workbook.addWorksheet("Submitters");
+                const levelsInVoting = workbook.addWorksheet("Levels In Voting");
 
                 // Add columns to the sheets
                 pendingSheet.columns = [
@@ -380,6 +382,20 @@ module.exports = {
                     { header: "Level Name", key: "levelname", width: 30 },
                     { header: "Device", key: "device", width: 20 },
                     { header: "Created At", key: "createdAt", width: 25 },
+                ];
+
+                submitters.columns = [
+                    { header: "discordid", key: "discordid", width: 25 },
+                    { header: "submissions", key: "submissions", width: 30 },
+                    { header: "dbFlag", key: "dbFlag", width: 20 },
+                ];
+
+                levelsInVoting.columns = [
+                    { header: "levelname", key: "levelname", width: 25 },
+                    { header: "submitter", key: "submitter", width: 30 },
+                    { header: "discordid", key: "discordid", width: 20 },
+                    { header: "yeses", key: "yeses", width: 20 },
+                    { header: "nos", key: "nos", width: 20 },
                 ];
 
                 dailyStatsSheet.columns = [
@@ -448,6 +464,24 @@ module.exports = {
                     ],
                 });
 
+                const submittersData = await db.submitters.findAll({
+                    attributes: [
+                        "discordid",
+                        "submissions",
+                        "dmFlag",
+                    ],
+                });
+
+                const levelsInVotingData = await db.levelsInVoting.findAll({
+                    attributes: [
+                        "levelname",
+                        "submitter",
+                        "discordid",
+                        "yeses",
+                        "nos",
+                    ],
+                });
+
                 pendingRecords.forEach((record) =>
                     pendingSheet.addRow(record.toJSON())
                 );
@@ -459,6 +493,12 @@ module.exports = {
                 );
                 dailyStats.forEach((stat) =>
                     dailyStatsSheet.addRow(stat.toJSON())
+                );
+                submittersData.forEach((stat) =>
+                    submitters.addRow(stat.toJSON())
+                );
+                levelsInVotingData.forEach((stat) =>
+                    levelsInVoting.addRow(stat.toJSON())
                 );
 
                 await workbook.xlsx.writeFile(filePath);

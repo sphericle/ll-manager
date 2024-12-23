@@ -411,7 +411,20 @@ module.exports = {
             subcommand
                 .setName("debugclear")
                 .setDescription("Set the submission count of all users for the month to 0")
-        ),
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName("voteinsert")
+                .setDescription("debug")
+                .addStringOption((option) =>
+                    option
+                        .setName("submitteruser")
+                        .setDescription("The name of the user to insert")
+                        .setRequired(true)
+                        .setAutocomplete(true)
+                )
+        )
+    ,
     async autocomplete(interaction) {
         const focused = interaction.options.getFocused(true);
         const { cache, db } = require("../../index.js");
@@ -480,6 +493,25 @@ module.exports = {
                         name: submitter.name,
                         value: submitter.discordid,
                     }))
+            );
+        } else if (subcommand === "voteinsert") {
+            const members = interaction.guild.members.cache;
+            const filtered = members
+                .filter((member) =>
+                    member.user.username
+                        .toLowerCase()
+                        .includes(focused.value.toLowerCase())
+                )
+                .map((member) => {
+                    return {
+                        name: member.user.username,
+                        value: member.id,
+                    };
+                });
+            await interaction.respond(
+                filtered.slice(0, 25).map((user) => {
+                    return { name: user.name, value: user.value };
+                })
             );
         } else
             return await interaction.respond(
@@ -595,8 +627,8 @@ module.exports = {
                     {
                         name: "Creators:",
                         value: `${rawCreators
-                                ? rawCreators.slice(0, 1023)
-                                : "None provided"
+                            ? rawCreators.slice(0, 1023)
+                            : "None provided"
                             }`,
                         inline: true,
                     },
@@ -1922,7 +1954,7 @@ module.exports = {
 
             // set submissions to 0
             try {
-                await db.submitters.update({ submissions: count || 0 }, { where: cmdUser ? {discordid: cmdUser } : {} });
+                await db.submitters.update({ submissions: count || 0 }, { where: cmdUser ? { discordid: cmdUser } : {} });
             } catch (error) {
                 logger.info(
                     `Failed to reset submissions: ${error}`
@@ -1948,7 +1980,28 @@ module.exports = {
 
             return interaction.editReply(":white_check_mark: Levels cleared!");
         } else if (interaction.options.getSubcommand() === "voteinsert") {
-            return await interaction.editReply(":x: This command is disabled");
+            const { db } = require("../../index.js");
+
+            const text = await interaction.channel.name;
+            const matchLevelName = text.match(/^(.*)\s\d+-\d+$/);
+            const user = await interaction.options.getString("submitteruser");
+            const matchYes = text.match(/(\d+)-\d+$/);
+            const matchNo = text.match(/\d+-(\d+)$/);
+
+            const submitter = await db.submitters.findOne({ where: { discordid: user } });
+            if (!submitter) {
+                // create submitter
+                db.submitters.create({ discordid: user, submissions: 0, dmFlag: false });
+            }
+
+            db.levelsInVoting.create({
+                levelname: matchLevelName[1],
+                submitter: user,
+                discordid: interaction.channel.id,
+                yeses: matchYes[1],
+                nos: matchNo[1],
+            });
+            interaction.editReply(":white_check_mark: Vote inserted!");
         }
     },
 };
