@@ -280,13 +280,17 @@ module.exports = {
         } else if (subcommand === "status") {
             const { db } = require("../../index.js");
             const level = await interaction.options.getString("levelname");
+            
+            const hasStaffRole = await interaction.member.roles.cache.has(staffRole);
 
             let submission;
             try {
                 submission = await db.levelsInVoting.findOne({
-                    where: {
+                    where: !hasStaffRole ? {
                         discordid: level,
                         submitter: interaction.user.id,
+                    } : {
+                        discordid: level,
                     },
                 });
             } catch (error) {
