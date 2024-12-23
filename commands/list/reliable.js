@@ -92,13 +92,27 @@ module.exports = {
                     count = parseInt(matchYes[1]); // Parse the regex output and add 1 vote to it
                     count += 1;
 
-                    logger.log(`New yes votes: ${count}`);
-
                     await interaction.editReply({
                         content:
                             "Updating thread name, this could take a while...",
                         ephemeral: true,
                     });
+
+                    // get last 10 messages in channel
+                    const messages = await interaction.channel.messages.fetch({
+                        limit: 10,
+                    });
+
+                    // find the most recent message that contains "vote: "
+                    const voteMessage = messages.find((msg) =>
+                        msg.content.includes("vote: ")
+                    );
+
+                    // pin the message
+                    if (voteMessage)
+                        await voteMessage.pin();
+                        
+
 
                     // update the thread name
                     await interaction.channel.setName(
@@ -146,7 +160,6 @@ module.exports = {
                 );
             }
 
-            logger.log(await interaction.channel.id);
             // ping user if needed
             return await interaction.editReply({
                 content: "The thread has been updated!",
@@ -173,13 +186,25 @@ module.exports = {
                     count = parseInt(matchNo[1]); // Parse the regex output and add 1 vote to it
                     count += 1;
 
-                    logger.log(`New no votes: ${count}`);
-
                     await interaction.editReply({
                         content:
                             "Updating thread name, this could take a while...",
                         ephemeral: true,
                     });
+
+                    // get last 10 messages in channel
+                    const messages = await interaction.channel.messages.fetch({
+                        limit: 10,
+                    });
+
+                    // find the most recent message that contains "vote: "
+                    const voteMessage = messages.find((msg) =>
+                        msg.content.includes("vote: ")
+                    );
+
+                    // pin the message
+                    if (voteMessage)
+                        await voteMessage.pin();
 
                     // update the thread name
                     await interaction.channel.setName(
