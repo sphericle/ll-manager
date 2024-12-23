@@ -116,17 +116,20 @@ module.exports = {
                         where: { discordid: await interaction.channel.id },
                     });
 
-                    const entry = dbEntry.dataValues;
+                    if (dbEntry) {
 
-                    const submitterDb = await db.submitters.findOne({
-                        where: { discordid: entry.submitter },
-                    });
+                        const entry = dbEntry.dataValues;
 
-                    // check if the user has dmFlag set to true
-                    if (submitterDb.dataValues.dmFlag) {
-                        // get user by id of entry.submitter
-                        const submitter = await interaction.guild.members.fetch(entry.submitter);
-                        await submitter.send(`Your level **"${matchLevelName[1]}"** has received a new yes vote!\nThe vote is now at **${count}-${matchNo[1]}**.\n-# _To disable these messages, use the \`/vote dm\` command._`);
+                        const submitterDb = await db.submitters.findOne({
+                            where: { discordid: entry.submitter },
+                        });
+
+                        // check if the user has dmFlag set to true
+                        if (submitterDb.dataValues.dmFlag) {
+                            // get user by id of entry.submitter
+                            const submitter = await interaction.guild.members.fetch(entry.submitter);
+                            await submitter.send(`Your level **"${matchLevelName[1]}"** has received a new yes vote!\nThe vote is now at **${count}-${matchNo[1]}**.\n-# _To disable these messages, use the \`/vote dm\` command._`);
+                        }
                     }
                 } catch (e) {
                     logger.error(`Error: ${e}`);
@@ -178,6 +181,32 @@ module.exports = {
                     await interaction.channel.setName(
                         `${matchLevelName[1]} ${matchYes[1]}-${count}`
                     ); // Set the channel name to the same thing but with the added yes
+
+                    // update entry in db
+                    await db.levelsInVoting.update(
+                        { yeses: count },
+                        { where: { discordid: await interaction.channel.id } }
+                    );
+
+                    const dbEntry = await db.levelsInVoting.findOne({
+                        where: { discordid: await interaction.channel.id },
+                    });
+
+                    if (dbEntry) {
+
+                        const entry = dbEntry.dataValues;
+
+                        const submitterDb = await db.submitters.findOne({
+                            where: { discordid: entry.submitter },
+                        });
+
+                        // check if the user has dmFlag set to true
+                        if (submitterDb.dataValues.dmFlag) {
+                            // get user by id of entry.submitter
+                            const submitter = await interaction.guild.members.fetch(entry.submitter);
+                            await submitter.send(`Your level **"${matchLevelName[1]}"** has received a new yes vote!\nThe vote is now at **${count}-${matchNo[1]}**.\n-# _To disable these messages, use the \`/vote dm\` command._`);
+                        }
+                    }
                 } catch (e) {
                     logger.error(`Error: ${e}`);
                     return await interaction.editReply(
