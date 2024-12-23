@@ -205,7 +205,7 @@ module.exports = {
                         if (submitterDb.dataValues.dmFlag) {
                             // get user by id of entry.submitter
                             const submitter = await interaction.guild.members.fetch(entry.submitter);
-                            await submitter.send(`Your level **"${matchLevelName[1]}"** has received a new yes vote!\nThe vote is now at **${count}-${matchNo[1]}**.\n-# _To disable these messages, use the \`/vote dm\` command._`);
+                            await submitter.send(`Your level **"${matchLevelName[1]}"** has received a no vote...\nThe vote is now at **${matchYes[1]}-${count}**.\n-# _To disable these messages, use the \`/vote dm\` command._`);
                         }
                     }
                 } catch (e) {
