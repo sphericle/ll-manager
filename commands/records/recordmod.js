@@ -870,12 +870,10 @@ module.exports = {
                 : guild;
 
             // staffGuild.channels.cache.get(acceptedRecordsID).send({ content: '', embeds: [acceptEmbed], components: [row] });
-            staffGuild.channels.cache
-                .get(archiveRecordsID)
-                .send({
-                    content: userToPing ? `<@${userToPing}>` : "",
-                    embeds: [publicEmbed],
-                });
+            staffGuild.channels.cache.get(archiveRecordsID).send({
+                content: userToPing ? `<@${userToPing}>` : "",
+                embeds: [publicEmbed],
+            });
 
             // Check if we need to send in dms as well
             const settings = await db.staffSettings.findOne({

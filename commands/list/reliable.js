@@ -74,7 +74,7 @@ module.exports = {
         if (interaction.options.getSubcommand() === "yes") {
             const { db } = require("../../index.js");
             // if the current channel is not a thread
-            if (!await interaction.channel.isThread()) {
+            if (!(await interaction.channel.isThread())) {
                 return await interaction.editReply(
                     "You must be in a thread to use this command"
                 );
@@ -105,7 +105,6 @@ module.exports = {
                         `${matchLevelName[1]} ${count}-${matchNo[1]}`
                     ); // Set the channel name to the same thing but with the added yes
 
-                    
                     // update entry in db
                     await db.levelsInVoting.update(
                         { yeses: count },
@@ -117,7 +116,6 @@ module.exports = {
                     });
 
                     if (dbEntry) {
-
                         const entry = dbEntry.dataValues;
 
                         const submitterDb = await db.submitters.findOne({
@@ -127,8 +125,13 @@ module.exports = {
                         // check if the user has dmFlag set to true
                         if (submitterDb.dataValues.dmFlag) {
                             // get user by id of entry.submitter
-                            const submitter = await interaction.guild.members.fetch(entry.submitter);
-                            await submitter.send(`Your level **"${matchLevelName[1]}"** has received a new yes vote!\nThe vote is now at **${count}-${matchNo[1]}**.\n-# _To disable these messages, use the \`/vote dm\` command._`);
+                            const submitter =
+                                await interaction.guild.members.fetch(
+                                    entry.submitter
+                                );
+                            await submitter.send(
+                                `Your level **"${matchLevelName[1]}"** has received a new yes vote!\nThe vote is now at **${count}-${matchNo[1]}**.\n-# _To disable these messages, use the \`/vote dm\` command._`
+                            );
                         }
                     }
                 } catch (e) {
@@ -143,7 +146,7 @@ module.exports = {
                 );
             }
 
-            logger.log(await interaction.channel.id)
+            logger.log(await interaction.channel.id);
             // ping user if needed
             return await interaction.editReply({
                 content: "Updated thread name!",
@@ -194,7 +197,6 @@ module.exports = {
                     });
 
                     if (dbEntry) {
-
                         const entry = dbEntry.dataValues;
 
                         const submitterDb = await db.submitters.findOne({
@@ -204,8 +206,13 @@ module.exports = {
                         // check if the user has dmFlag set to true
                         if (submitterDb.dataValues.dmFlag) {
                             // get user by id of entry.submitter
-                            const submitter = await interaction.guild.members.fetch(entry.submitter);
-                            await submitter.send(`Your level **"${matchLevelName[1]}"** has received a no vote...\nThe vote is now at **${matchYes[1]}-${count}**.\n-# _To disable these messages, use the \`/vote dm\` command._`);
+                            const submitter =
+                                await interaction.guild.members.fetch(
+                                    entry.submitter
+                                );
+                            await submitter.send(
+                                `Your level **"${matchLevelName[1]}"** has received a no vote...\nThe vote is now at **${matchYes[1]}-${count}**.\n-# _To disable these messages, use the \`/vote dm\` command._`
+                            );
                         }
                     }
                 } catch (e) {

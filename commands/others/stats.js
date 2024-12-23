@@ -360,7 +360,8 @@ module.exports = {
                 const deniedSheet = workbook.addWorksheet("Denied Records");
                 const dailyStatsSheet = workbook.addWorksheet("Daily Stats");
                 const submitters = workbook.addWorksheet("Submitters");
-                const levelsInVoting = workbook.addWorksheet("Levels In Voting");
+                const levelsInVoting =
+                    workbook.addWorksheet("Levels In Voting");
 
                 // Add columns to the sheets
                 pendingSheet.columns = [
@@ -465,11 +466,7 @@ module.exports = {
                 });
 
                 const submittersData = await db.submitters.findAll({
-                    attributes: [
-                        "discordid",
-                        "submissions",
-                        "dmFlag",
-                    ],
+                    attributes: ["discordid", "submissions", "dmFlag"],
                 });
 
                 const levelsInVotingData = await db.levelsInVoting.findAll({

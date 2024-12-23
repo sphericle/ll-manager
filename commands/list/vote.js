@@ -50,9 +50,7 @@ module.exports = {
                 .addIntegerOption((option) =>
                     option
                         .setName("id")
-                        .setDescription(
-                            "The level's ID in Geometry Dash"
-                        )
+                        .setDescription("The level's ID in Geometry Dash")
                         .setRequired(true)
                 )
                 .addStringOption((option) =>
@@ -100,7 +98,9 @@ module.exports = {
         .addSubcommand((subcommand) =>
             subcommand
                 .setName("dm")
-                .setDescription("Toggle D/* M */s when someone votes for your level")
+                .setDescription(
+                    "Toggle D/* M */s when someone votes for your level"
+                )
                 .addIntegerOption((option) =>
                     option
                         .setName("status")
@@ -119,18 +119,21 @@ module.exports = {
                 .addStringOption((option) =>
                     option
                         .setName("levelname")
-                        .setDescription("The name of the level you want to check")
+                        .setDescription(
+                            "The name of the level you want to check"
+                        )
                         .setAutocomplete(true)
                         .setRequired(true)
                 )
-        )
-    ,
+        ),
     async autocomplete(interaction) {
         const focused = interaction.options.getFocused(true);
         const { db } = require("../../index.js");
         const subcommand = interaction.options.getSubcommand();
         if (subcommand === "status") {
-            const levels = await db.levelsInVoting.findAll({ where: { submitter: interaction.user.id } })
+            const levels = await db.levelsInVoting.findAll({
+                where: { submitter: interaction.user.id },
+            });
             return await interaction.respond(
                 levels
                     .filter((lvl) =>
@@ -139,7 +142,10 @@ module.exports = {
                             .includes(focused.value.toLowerCase())
                     )
                     .slice(0, 25)
-                    .map((lvl) => ({ name: lvl.levelname, value: `${lvl.discordid}` }))
+                    .map((lvl) => ({
+                        name: lvl.levelname,
+                        value: `${lvl.discordid}`,
+                    }))
             );
         }
     },
@@ -149,7 +155,6 @@ module.exports = {
 
         if (subcommand === "submit") {
             const { db } = require("../../index.js");
-
 
             const levelname = interaction.options.getString("levelname");
             const verifier = interaction.options.getString("verifier");
@@ -193,17 +198,20 @@ module.exports = {
                 return interaction.editReply(
                     ":x: You have reached the maximum number of submissions per month."
                 );
-            
+
             const guild = await interaction.client.guilds.fetch(guildId);
 
-            const voteChannel = await guild.channels.cache.get(reliableThreadID);
+            const voteChannel = await guild.channels.cache.get(
+                reliableThreadID
+            );
 
-            const message = `_Submitted by: <@${interaction.user.id}>_\n\nLevel name: ${levelname}\nVerifier: ${verifier}\nVerification: ${verification}\nCreators: ${creators}\nAuthor: ${author}\nID: \`${id}\`\nSong name: ${songname}` // man don't askl me why itr needs to be formatted like this ik its ugly bro
-                + (percent ? `\nList percent: ${percent}%` : "")
-                + (password ? `\nPassword: ${password}` : "")
-                + (raw ? `\nRaw: ${raw}` : "")
-                + (opinion ? `\nDifficulty opinion: ${opinion}` : "")
-                + (nong ? `\nNONG: ${nong.url}` : "");
+            const message =
+                `_Submitted by: <@${interaction.user.id}>_\n\nLevel name: ${levelname}\nVerifier: ${verifier}\nVerification: ${verification}\nCreators: ${creators}\nAuthor: ${author}\nID: \`${id}\`\nSong name: ${songname}` + // man don't askl me why itr needs to be formatted like this ik its ugly bro
+                (percent ? `\nList percent: ${percent}%` : "") +
+                (password ? `\nPassword: ${password}` : "") +
+                (raw ? `\nRaw: ${raw}` : "") +
+                (opinion ? `\nDifficulty opinion: ${opinion}` : "") +
+                (nong ? `\nNONG: ${nong.url}` : "");
             const thread = await voteChannel.threads.create({
                 name: `${levelname} 0-0`,
                 autoArchiveDuration: 1440,
@@ -245,7 +253,6 @@ module.exports = {
                 return interaction.editReply(
                     ":x: You have not submitted a level using the bot!"
                 );
-            
 
             try {
                 await db.submitters.update(
@@ -260,7 +267,9 @@ module.exports = {
             }
 
             return interaction.editReply(
-                `:white_check_mark: DMs have been ${status ? "enabled" : "disabled"}!`
+                `:white_check_mark: DMs have been ${
+                    status ? "enabled" : "disabled"
+                }!`
             );
         } else if (subcommand === "status") {
             const { db } = require("../../index.js");
@@ -285,7 +294,7 @@ module.exports = {
                 return interaction.editReply(
                     ":x: You have not submitted a level with that name."
                 );
-            
+
             return interaction.editReply(
                 `The vote for ${submission.levelname} is currently ${submission.yeses}-${submission.nos}.`
             );
