@@ -150,6 +150,7 @@ module.exports = {
                 ephemeral: true,
             });
         } else if (interaction.options.getSubcommand() === "no") {
+            const { db } = require("../../index.js");
             await interaction.editReply("Fetching thread info...");
             // if the current channel is not a thread
             if (!interaction.channel.isThread()) {
