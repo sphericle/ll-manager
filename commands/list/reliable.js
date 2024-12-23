@@ -19,14 +19,6 @@ module.exports = {
             subcommand
                 .setName("accept")
                 .setDescription("Accept a level")
-                .addStringOption((option) =>
-                    option
-                        .setName("user")
-                        .setDescription(
-                            "The user to ping when accepting the level"
-                        )
-                        .setAutocomplete(true)
-                )
         )
         .addSubcommand((subcommand) =>
             subcommand
@@ -37,14 +29,6 @@ module.exports = {
                         .setName("reason")
                         .setDescription("The reason for rejecting the level")
                         .setRequired(true)
-                )
-                .addStringOption((option) =>
-                    option
-                        .setName("user")
-                        .setDescription(
-                            "The user to ping when rejecting the level"
-                        )
-                        .setAutocomplete(true)
                 )
         ),
     async autocomplete(interaction) {
@@ -266,6 +250,10 @@ module.exports = {
                 `${submissionResultsID}`
             );
 
+            const submission = await db.levelsInVoting.findOne({
+                where: { discordid: interaction.channel.id },
+            });
+
             // if the current channel is not a thread
             if (!interaction.channel.isThread()) {
                 return await interaction.editReply(
@@ -282,7 +270,6 @@ module.exports = {
                 );
             }
             const levelName = matchLevelName[1];
-            const userToPing = interaction.options.getString("user");
 
             const embed = new EmbedBuilder()
                 .setTitle(
@@ -301,7 +288,7 @@ module.exports = {
             await submissionsChannel.send({
                 embeds: [embed],
                 content: interaction.options.getString("user")
-                    ? `<@${userToPing}>`
+                    ? `<@${submission.submitter}>`
                     : "",
             });
 
