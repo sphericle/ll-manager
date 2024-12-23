@@ -179,11 +179,12 @@ module.exports = {
                 });
 
                 if (!user) {
-                    await db.submitters.create({
+                    const userResult = await db.submitters.create({
                         discordid: interaction.user.id,
                         submissions: 0,
                         dmFlag: false,
                     });
+                    user = userResult.dataValues;
                 }
             } catch (error) {
                 logger.error(error);
@@ -193,6 +194,11 @@ module.exports = {
             }
 
             // check if user has 3 submissions already
+            if (user.submissions >= 3)
+                return interaction.editReply(
+                    ":x: You have reached the maximum number of submissions per month."
+                );
+            
             const guild = await interaction.client.guilds.fetch(guildId);
 
             const voteChannel = await guild.channels.cache.get(reliableThreadID);

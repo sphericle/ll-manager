@@ -390,10 +390,26 @@ module.exports = {
                         .setDescription("The position to restore the level at")
                         .setRequired(true)
                 )
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName("setsubmissions")
+                .setDescription("Set the submission count of all users for the month to 0")
+                .addStringOption((option) =>
+                    option
+                        .setName("user")
+                        .setDescription("The user to reset the submissions for")
+                        .setAutocomplete(true)
+                )
+                .addIntegerOption((option) =>
+                    option
+                        .setName("submissions")
+                        .setDescription("The new submission count")
+                )
         ),
     async autocomplete(interaction) {
         const focused = interaction.options.getFocused(true);
-        const { cache } = require("../../index.js");
+        const { cache, db } = require("../../index.js");
         const subcommand = interaction.options.getSubcommand();
         if (subcommand === "renameuser")
             return await interaction.respond(
@@ -439,6 +455,25 @@ module.exports = {
                     .map((level) => ({
                         name: level.name,
                         value: level.filename,
+                    }))
+            );
+        } else if (subcommand === "setsubmissions") {
+            let submitters = await db.submitters.findAll({
+                where: {
+                    name: Sequelize.where(
+                        Sequelize.fn("LOWER", Sequelize.col("name")),
+                        "LIKE",
+                        "%" + focused.value.toLowerCase() + "%"
+                    ),
+                },
+            });
+
+            return await interaction.respond(
+                submitters
+                    .slice(0, 25)
+                    .map((submitter) => ({
+                        name: submitter.name,
+                        value: submitter.discordid,
                     }))
             );
         } else
@@ -542,8 +577,7 @@ module.exports = {
                 .setColor(0x8fce00)
                 .setTitle(`Place Level: ${levelname}`)
                 .setDescription(
-                    `**${levelname}** will be placed at **#${position}**, above **${
-                        levelBelow ? levelBelow.name : "-"
+                    `**${levelname}** will be placed at **#${position}**, above **${levelBelow ? levelBelow.name : "-"
                     }** and below **${levelAbove ? levelAbove.name : "-"}**`
                 )
                 .addFields(
@@ -555,11 +589,10 @@ module.exports = {
                     },
                     {
                         name: "Creators:",
-                        value: `${
-                            rawCreators
+                        value: `${rawCreators
                                 ? rawCreators.slice(0, 1023)
                                 : "None provided"
-                        }`,
+                            }`,
                         inline: true,
                     },
                     {
@@ -894,8 +927,7 @@ module.exports = {
             }
 
             logger.info(
-                `${interaction.user.tag} (${
-                    interaction.user.id
+                `${interaction.user.tag} (${interaction.user.id
                 }) submitted ${interaction.options.getString(
                     "levelname"
                 )} for ${interaction.options.getString("username")}`
@@ -951,10 +983,8 @@ module.exports = {
                 .setColor(0x8fce00)
                 .setTitle(`Move Level: ${levelfile}`)
                 .setDescription(
-                    `**${levelfile}** will be ${
-                        lowered ? "lowered" : "raised"
-                    } to **#${position}**, above **${
-                        levelBelow.name ?? "-"
+                    `**${levelfile}** will be ${lowered ? "lowered" : "raised"
+                    } to **#${position}**, above **${levelBelow.name ?? "-"
                     }** and below **${levelAbove.name ?? "-"}**`
                 )
                 .setTimestamp();
@@ -1023,8 +1053,7 @@ module.exports = {
                 .setColor(0x8fce00)
                 .setTitle(`Move to Legacy: ${levelfile}`)
                 .setDescription(
-                    `**${levelfile}** will be moved from **#${
-                        currentPosition + 1
+                    `**${levelfile}** will be moved from **#${currentPosition + 1
                     }** to the top of the **legacy** list (**#${list.length}**)`
                 )
                 .setTimestamp();
@@ -1089,8 +1118,7 @@ module.exports = {
                 .setColor(0x8fce00)
                 .setTitle(`Move Level: ${levelfile}`)
                 .setDescription(
-                    `**${levelfile}** will be moved from **legacy** to **#${position}**, above **${
-                        levelBelow ?? "-"
+                    `**${levelfile}** will be moved from **legacy** to **#${position}**, above **${levelBelow ?? "-"
                     }** and below **${levelAbove ?? "-"}**`
                 )
                 .setTimestamp();
@@ -1154,7 +1182,7 @@ module.exports = {
                 if (!listFilename.startsWith("_"))
                     logger.error(
                         "Git - " +
-                            `Unable to parse data from ${listFilename}:\n${parseError}`
+                        `Unable to parse data from ${listFilename}:\n${parseError}`
                     );
                 return -1;
             }
@@ -1172,7 +1200,7 @@ module.exports = {
                     if (!filename.startsWith("_"))
                         logger.error(
                             "Git - " +
-                                `Unable to parse data from ${filename}.json:\n${parseError}`
+                            `Unable to parse data from ${filename}.json:\n${parseError}`
                         );
                     continue;
                 }
@@ -1222,7 +1250,7 @@ module.exports = {
                 if (!flagsFilename.startsWith("_"))
                     logger.error(
                         "Git - " +
-                            `Unable to parse data from ${listFilename}:\n${parseError}`
+                        `Unable to parse data from ${listFilename}:\n${parseError}`
                     );
                 return;
             }
@@ -1743,11 +1771,11 @@ module.exports = {
 
             const changelogList = changelog_response
                 ? JSON.parse(
-                      Buffer.from(
-                          changelog_response.data.content,
-                          "base64"
-                      ).toString("utf-8")
-                  )
+                    Buffer.from(
+                        changelog_response.data.content,
+                        "base64"
+                    ).toString("utf-8")
+                )
                 : [];
 
             if (position < 1 || position > list.length + 1) {
@@ -1881,6 +1909,25 @@ module.exports = {
             return await interaction.editReply(
                 ":white_check_mark: Restored the level!"
             );
-        }
+        } else if (interaction.options.getSubcommand() === "setsubmissions") {
+            const { db } = require("../../index.js");
+
+            const cmdUser = interaction.options.getString("user");
+            const count = interaction.options.getInteger("submissions");
+
+            // set submissions to 0
+            try {
+                await db.submitters.update({ submissions: count || 0 }, { where: cmdUser ? {discordid: cmdUser } : {} });
+            } catch (error) {
+                logger.info(
+                    `Failed to reset submissions: ${error}`
+                );
+                return await interaction.editReply(
+                    ":x: Something went wrong while resetting the submissions; please try again later"
+                );
+            }
+
+            return await interaction.editReply(":white_check_mark: Submissions have been reset");
+        }   
     },
 };
