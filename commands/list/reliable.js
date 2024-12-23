@@ -183,7 +183,7 @@ module.exports = {
 
                     // find the most recent message that contains "vote: "
                     const voteMessage = messages.find((msg) =>
-                        msg.content.includes("vote: ")
+                        msg.content.toLowerCase().includes("vote: ")
                     );
 
                     // pin the message
@@ -287,9 +287,7 @@ module.exports = {
             await interaction.editReply("Sending message...");
             await submissionsChannel.send({
                 embeds: [embed],
-                content: interaction.options.getString("user")
-                    ? `<@${submission.submitter}>`
-                    : "",
+                content: `<@${submission.submitter}>`,
             });
 
             await interaction.editReply({
