@@ -446,7 +446,7 @@ module.exports = {
         ),
     async autocomplete(interaction) {
         const focused = interaction.options.getFocused(true);
-        const { cache, db } = require("../../index.js");
+        const { cache } = require("../../index.js");
         const subcommand = interaction.options.getSubcommand();
         if (subcommand === "renameuser")
             return await interaction.respond(
@@ -492,24 +492,7 @@ module.exports = {
                     value: level.filename,
                 }))
             );
-        } else if (subcommand === "setsubmissions") {
-            let submitters = await db.submitters.findAll({
-                where: {
-                    name: Sequelize.where(
-                        Sequelize.fn("LOWER", Sequelize.col("name")),
-                        "LIKE",
-                        "%" + focused.value.toLowerCase() + "%"
-                    ),
-                },
-            });
-
-            return await interaction.respond(
-                submitters.slice(0, 25).map((submitter) => ({
-                    name: submitter.name,
-                    value: submitter.discordid,
-                }))
-            );
-        } else if (subcommand === "submitban") {
+        } else if (subcommand === "submitban" || subcommand === "setsubmissions") {
             const members = interaction.guild.members.cache;
             const filtered = members
                 .filter((member) =>
