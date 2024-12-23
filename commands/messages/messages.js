@@ -11,7 +11,7 @@ const logger = require("log4js").getLogger();
 
 module.exports = {
     cooldown: 5,
-    enabled: true,
+    enabled: false,
     data: new SlashCommandBuilder()
         .setName("message")
         .setDescription("Bot messages management")
