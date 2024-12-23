@@ -406,6 +406,11 @@ module.exports = {
                         .setName("submissions")
                         .setDescription("The new submission count")
                 )
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName("debugclear")
+                .setDescription("Set the submission count of all users for the month to 0")
         ),
     async autocomplete(interaction) {
         const focused = interaction.options.getFocused(true);
@@ -1942,6 +1947,8 @@ module.exports = {
             }
 
             return interaction.editReply(":white_check_mark: Levels cleared!");
+        } else if (subcommand === "voteinsert") {
+            return await interaction.editReply(":x: This command is disabled");
         }
     },
 };
