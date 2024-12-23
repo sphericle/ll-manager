@@ -236,6 +236,15 @@ module.exports = {
             const status = numStatus === 1 ? true : false;
 
             logger.log(status);
+
+            const submitter = await db.submitters.findOne({
+                where: { discordid: interaction.user.id },
+            });
+
+            if (!submitter)
+                return interaction.editReply(
+                    ":x: You have not submitted a level using the bot!"
+                );
             
 
             try {
