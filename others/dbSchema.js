@@ -188,6 +188,7 @@ module.exports = {
             },
             submissions: Sequelize.INTEGER,
             dmFlag: Sequelize.BOOLEAN,
+            banned: Sequelize.BOOLEAN,
         });
 
         return db;

@@ -188,6 +188,7 @@ module.exports = {
                         discordid: interaction.user.id,
                         submissions: 0,
                         dmFlag: false,
+                        banned: false,
                     });
                     user = userResult.dataValues;
                 }
@@ -203,6 +204,9 @@ module.exports = {
                 return interaction.editReply(
                     ":x: You have reached the maximum number of submissions per month."
                 );
+            
+            if (user.banned)
+                return interaction.editReply(':x: You have been banned from submitting levels.');
 
             const guild = await interaction.client.guilds.fetch(guildId);
 

@@ -11,6 +11,7 @@ const {
     githubRepo,
     githubDataPath,
     githubBranch,
+    guildId
 } = require("../../config.json");
 const logger = require("log4js").getLogger();
 const Sequelize = require("sequelize");
@@ -420,6 +421,28 @@ module.exports = {
             subcommand
                 .setName("setvote")
                 .setDescription("Update the information of a level in voting")
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName("submitban")
+                .setDescription("Submission ban a user")
+                .addStringOption((option) =>
+                    option
+                        .setName("submitteruser")
+                        .setDescription("The user to ban from submitting")
+                        .setAutocomplete(true)
+                        .setRequired(true)
+                )
+                .addIntegerOption((option) =>
+                    option
+                        .setName("unban")
+                        .setDescription("Whether to unban this user")
+                        .addChoices(
+                            { name: "Yes", value: 1 },
+                            { name: "No", value: 0 }
+                        )
+                )
+                
         ),
     async autocomplete(interaction) {
         const focused = interaction.options.getFocused(true);
@@ -486,7 +509,7 @@ module.exports = {
                     value: submitter.discordid,
                 }))
             );
-        } else if (subcommand === "voteinsert") {
+        } else if (subcommand === "submitban") {
             const members = interaction.guild.members.cache;
             const filtered = members
                 .filter((member) =>
@@ -1999,6 +2022,7 @@ module.exports = {
                     discordid: user,
                     submissions: 0,
                     dmFlag: false,
+                    banned: false,
                 });
             }
 
@@ -2022,7 +2046,7 @@ module.exports = {
                 where: { discordid: interaction.channel.id },
             });
 
-            if (!level) return await interaction.editReply(":x: No level found in voting channel, try creating it with /voteinsert");
+            if (!level) return await interaction.editReply(":x: level not found");
 
             db.levelsInVoting.update({
                 levelname: matchLevelName[1],
@@ -2034,6 +2058,50 @@ module.exports = {
                     }
                 }
             );
+        } else if (interaction.options.getSubcommand() === "submitban") {
+            const { db } = require("../../index.js");
+            const user = await interaction.options.getString("submitteruser");
+            const unban = await interaction.options.getInteger("unban");
+            if (unban === 1) {
+                await db.submitters.update({
+                    banned: false
+                }, {
+                    where: {
+                        discordid: user
+                    }
+                });
+                return await interaction.editReply("The user has been unbanned");
+            }
+            await db.submitters.update({
+                banned: true
+            }, {
+                where: {
+                    discordid: user
+                }
+            });
+
+            const guild = await interaction.client.guilds.fetch(guildId);
+
+            const levels = await db.levelsInVoting.findAll({
+                where: { submitter: user }
+            })
+
+            levels.forEach(async (level) => {
+                // get discord thread associated with level.discordid
+                const channel = await guild.channels.cache.get(level.discordid);
+
+                await channel.send(`:x: The submitter of this level has been submission banned, rejecting...`);
+
+                await channel.setName(`${level.levelname} (REJECTED)`)
+                
+                await channel.setArchived(true)
+            })
+
+            await db.levelsInVoting.destroy({
+                where: { submitter: user }
+            });
+
+            return await interaction.editReply(":x: This user has been banned!");
         }
     },
 };

@@ -130,7 +130,7 @@ module.exports = {
                                     entry.submitter
                                 );
                             await submitter.send(
-                                `Your level **"${matchLevelName[1]}"** has received a new yes vote!\nThe vote is now at **${count}-${matchNo[1]}**.\n-# _To disable these messages, use the \`/vote dm\` command._`
+                                `Your level _${matchLevelName[1]}_ has received a new yes vote!\nThe vote is now at **${count}-${matchNo[1]}**.\n-# _To disable these messages, use the \`/vote dm\` command._`
                             );
                         }
                     }
@@ -149,7 +149,7 @@ module.exports = {
             logger.log(await interaction.channel.id);
             // ping user if needed
             return await interaction.editReply({
-                content: "Updated thread name!",
+                content: "The thread has been updated!",
                 ephemeral: true,
             });
         } else if (interaction.options.getSubcommand() === "no") {
@@ -211,7 +211,7 @@ module.exports = {
                                     entry.submitter
                                 );
                             await submitter.send(
-                                `Your level **"${matchLevelName[1]}"** has received a no vote...\nThe vote is now at **${matchYes[1]}-${count}**.\n-# _To disable these messages, use the \`/vote dm\` command._`
+                                `Your level _${matchLevelName[1]}_ has received a no vote...\nThe vote is now at **${matchYes[1]}-${count}**.\n-# _To disable these messages, use the \`/vote dm\` command._`
                             );
                         }
                     }
@@ -234,6 +234,7 @@ module.exports = {
             interaction.options.getSubcommand() === "reject"
         ) {
             const guild = await interaction.client.guilds.fetch(guildId);
+            const { db } = require("../../index.js");
 
             const command = interaction.options.getSubcommand();
             const submissionsChannel = guild.channels.cache.get(
@@ -293,6 +294,11 @@ module.exports = {
                 ephemeral: true,
             });
             if (command === "reject") interaction.channel.setArchived(true);
+
+            await db.levelsInVoting.destroy({
+                where: { discordid: interaction.channel.id },
+            });
+
             return;
         }
     },
