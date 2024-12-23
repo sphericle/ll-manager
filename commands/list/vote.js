@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require("discord.js");
-const { guildId, reliableThreadID, staffRole } = require("../../config.json");
+const { guildId, reliableThreadID, staffRole, submissionsChannelID } = require("../../config.json");
 const logger = require("log4js").getLogger();
 
 module.exports = {
@@ -229,6 +229,8 @@ module.exports = {
             });
 
             logger.log(`Created thread: ${thread.name}`);
+            const logChannel = await guild.channels.cache.get(submissionsChannelID);
+            await logChannel.send(message);
 
             // increment user's submission count
             const submitter = await db.submitters.findOne({
