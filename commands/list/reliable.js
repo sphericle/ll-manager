@@ -148,6 +148,7 @@ module.exports = {
             });
         } else if (interaction.options.getSubcommand() === "no") {
             await interaction.editReply("Fetching thread info...");
+            const { db } = require("../../index.js");
             // if the current channel is not a thread
             if (!interaction.channel.isThread()) {
                 return await interaction.editReply(
@@ -178,6 +179,30 @@ module.exports = {
                     await interaction.channel.setName(
                         `${matchLevelName[1]} ${matchYes[1]}-${count}`
                     ); // Set the channel name to the same thing but with the added yes
+
+                    // update entry in db
+                    await db.levelsInVoting.update(
+                        { nos: count },
+                        { where: { discordid: await interaction.channel.id } }
+                    );
+
+                    const dbEntry = await db.levelsInVoting.findOne({
+                        where: { discordid: await interaction.channel.id },
+                    });
+
+                    const entry = dbEntry.dataValues;
+
+                    const submitterDb = await db.submitters.findOne({
+                        where: { discordid: entry.submitter },
+                    });
+
+                    // check if the user has dmFlag set to true
+                    if (submitterDb.dataValues.dmFlag) {
+                        // get user by id of entry.submitter
+                        const submitter = await interaction.guild.members.fetch(entry.submitter);
+                        await submitter.send(`Your level **"${matchLevelName[1]}"** has received a no vote...\nThe vote is now at **${matchYes[1]}-${count}**.\n-# _To disable these messages, use the \`/vote dm\` command._`);
+                    }
+
                 } catch (e) {
                     logger.error(`Error: ${e}`);
                     return await interaction.editReply(
