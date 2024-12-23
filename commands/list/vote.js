@@ -100,7 +100,7 @@ module.exports = {
         .addSubcommand((subcommand) =>
             subcommand
                 .setName("dm")
-                .setDescription("Toggle D/* M */s when someone votes for your level")
+                .setDescription("Toggle DMs when someone votes for your level")
                 .addIntegerOption((option) =>
                     option
                         .setName("status")
