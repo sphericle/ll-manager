@@ -124,11 +124,6 @@ module.exports = {
                         .setRequired(true)
                 )
         )
-        .addSubcommand((subcommand) =>
-            subcommand
-                .setName("debugclear")
-                .setDescription("Clears all levels in voting")
-        )
     ,
     async autocomplete(interaction) {
         const focused = interaction.options.getFocused(true);
@@ -283,22 +278,8 @@ module.exports = {
                 );
             
             return interaction.editReply(
-                `The vote is currently ${submission.yeses}-${submission.nos}.`
+                `The vote for ${submission.levelname} is currently ${submission.yeses}-${submission.nos}.`
             );
-        } else if (subcommand === "debugclear") {
-            const { db } = require("../../index.js");
-
-            try {
-                await db.levelsInVoting.destroy({ where: {} });
-                await db.submitters.destroy({ where: {} });
-            } catch (error) {
-                logger.error(error);
-                return interaction.editReply(
-                    ":x: An error occurred while clearing the levels in voting. Please try again later."
-                );
-            }
-
-            return interaction.editReply(":white_check_mark: Levels cleared!");
         }
     },
 };
