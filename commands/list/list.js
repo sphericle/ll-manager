@@ -1933,7 +1933,7 @@ module.exports = {
             }
 
             return await interaction.editReply(":white_check_mark: Submissions have been reset");
-        } else if (subcommand === "debugclear") {
+        } else if (interaction.options.getSubcommand() === "debugclear") {
             const { db } = require("../../index.js");
 
             try {
@@ -1947,7 +1947,7 @@ module.exports = {
             }
 
             return interaction.editReply(":white_check_mark: Levels cleared!");
-        } else if (subcommand === "voteinsert") {
+        } else if (interaction.options.getSubcommand() === "voteinsert") {
             return await interaction.editReply(":x: This command is disabled");
         }
     },
