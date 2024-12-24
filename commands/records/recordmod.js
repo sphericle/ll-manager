@@ -630,14 +630,13 @@ module.exports = {
                         value: `${interaction.user}`,
                         inline: true,
                     },
-                    { name: "Device", value: `${device}`, inline: true },
+                    { name: "Device", value: `${device} (${fps} FPS)`, inline: true },
                     { name: "Link", value: `${linkStr}`, inline: true },
                     {
                         name: "Enjoyment",
                         value: enjoyment ? `${enjoyment}/10` : "None",
                         inline: true,
                     },
-                    { name: "FPS", value: `${fps}`, inline: true }
                 )
                 .setTimestamp();
 
@@ -1110,14 +1109,13 @@ module.exports = {
                         value: `${interaction.user}`,
                         inline: true,
                     },
-                    { name: "Device", value: `${newDevice}`, inline: true },
+                    { name: "Device", value: `${newDevice} (${newFPS} FPS)`, inline: true },
                     { name: "Link", value: `${newDevice}`, inline: true },
                     {
                         name: "Enjoyment",
                         value: newEnjoyment ? `${newEnjoyment}/10` : "None",
                         inline: true,
                     },
-                    { name: "FPS", value: `${newFPS}`, inline: true }
                 )
                 .setTimestamp();
 
