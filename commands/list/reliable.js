@@ -96,12 +96,15 @@ module.exports = {
                     if (voteMessage)
                         await voteMessage.pin();
                         
+                    const message = await interaction.channel.send(`The vote is now at **${count}-${matchNo[1]}**.`);
 
 
                     // update the thread name
                     await interaction.channel.setName(
                         `${matchLevelName[1]} ${count}-${matchNo[1]}`
                     ); // Set the channel name to the same thing but with the added yes
+
+                    message.delete();
 
                     // update entry in db
                     await db.levelsInVoting.update(
