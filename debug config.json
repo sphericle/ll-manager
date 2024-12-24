@@ -1,0 +1,48 @@
+{
+    "debug": true,
+
+    "enableSeparateStaffServer": false,
+    "enableShifts": false,
+    "enablePriorityRole": false,
+    "enableWelcomeMessage": false,
+    "enableChangelogMessage": false,
+
+    "scheduleShifts": "10 0 * * *",
+    "scheduleShiftsReminder": "10 22 * * *",
+    "scheduleCacheUpdate": "30 * * * *",
+    "scheduleChangelog": "00 22 * * *",
+
+    "githubOwner": "layout-list",
+    "githubRepo": "layout-list",
+    "githubDataPath": "data",
+    "githubBranch": "main",
+
+    "clientId": "1320769215216619601",
+    "guildId": "1308195426410954884",
+    "staffGuildId": "1308195426410954884",
+
+    "priorityRoleID": "0",
+    "submissionLockRoleID": "0",
+
+    "pendingRecordsID": "1314957271742287954",
+    "priorityRecordsID": "1314957271742287954",
+
+    "acceptedRecordsID": "0",
+    "deniedRecordsID": "0",
+    "archiveRecordsID": "1314957271742287954",
+    "recordsID": "1314957271742287954",
+
+    "changelogID": "1314957271742287954",
+    "changelogRoleID": "0",
+
+    "guildMemberAddID": "1178399916125597716",
+
+    "shiftsReminderID": "1212119449994526801",
+    "shiftsLogsID": "1219796853822849084",
+    "recordsPerWeek": 60,
+
+    "submissionResultsID": "1314957293275840593",
+    "reliableThreadID": "1315441998278164531",
+    "staffRole": "1320770731985866803",
+    "submissionsChannelID": "1314957278981652491"
+}

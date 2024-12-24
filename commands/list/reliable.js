@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle } = require("discord.js");
 const logger = require("log4js").getLogger();
 const { submissionResultsID, guildId } = require("../../config.json");
 
@@ -297,8 +297,18 @@ module.exports = {
                     command === "accept" ? "ACCEPTED" : "REJECTED"
                 })`
             ); // Set the channel name to the same thing but with the added yes
+
+            // Create button to remove the message
+            const deleteThread = new ButtonBuilder()
+                .setCustomId("deleteThread")
+                .setLabel("Delete Thread")
+                .setStyle(ButtonStyle.Danger);
+    
+            const row = new ActionRowBuilder().addComponents(deleteThread);
+
             await interaction.editReply({
                 content: "The thread has been updated!",
+                components: command === "reject" ? [row] : [],
                 ephemeral: true,
             });
             if (command === "reject") interaction.channel.setArchived(true);
