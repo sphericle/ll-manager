@@ -97,11 +97,9 @@ module.exports = {
                         `The vote is now at **${count}-${matchNo[1]}**.`
                     );
 
-                    // update the thread name
-                    await interaction.channel.setName({
-                        name: `${matchLevelName[1]} ${count}-${matchNo[1]}`,
-                        reason: `Vote update (run by ${interaction.user.username})`,
-                    }); // Set the channel name to the same thing but with the added yes
+                    await interaction.channel.setName(
+                        `${matchLevelName[1]} ${count}-${matchNo[1]}`
+                    ); // Set the channel name to the same thing but with the added yes
 
                     message.delete();
 
@@ -191,11 +189,9 @@ module.exports = {
                     // pin the message
                     if (voteMessage) await voteMessage.pin();
 
-                    // update the thread name
-                    await interaction.channel.setName({
-                        name: `${matchLevelName[1]} ${matchYes[1]}-${count}`,
-                        reason: `Vote update (run by ${interaction.user.username})`,
-                    }); // Set the channel name to the same thing but with the added yes
+                    await interaction.channel.setName(
+                        `${matchLevelName[1]} ${matchYes[1]}-${count}`
+                    ); // Set the channel name to the same thing but with the added yes
 
                     // update entry in db
                     await db.levelsInVoting.update(
@@ -296,10 +292,11 @@ module.exports = {
                 content: "Updating thread name...",
                 ephemeral: true,
             });
-            await interaction.channel.setName({
-                name: `${matchLevelName[1]} (${ command === "accept" ? "ACCEPTED" : "REJECTED" })`,
-                reason: `Level ${command === "accept" ? "accepted" : "rejected"} by ${interaction.user.username}`,
-            }); // Set the channel name to the same thing but with the added yes
+            await interaction.channel.setName(
+                `${matchLevelName[1]} (${
+                    command === "accept" ? "ACCEPTED" : "REJECTED"
+                })`
+            ); // Set the channel name to the same thing but with the added yes
             await interaction.editReply({
                 content: "The thread has been updated!",
                 ephemeral: true,
