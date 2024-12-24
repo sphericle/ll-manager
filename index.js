@@ -100,15 +100,6 @@ async function start() {
     } catch (e) {
         logger.error(`Error setting presence: ${e}`);
     }
-
-    try {
-        await db.levelsInVoting.update(
-            { yeses: 0 },
-            { where: { discordid: "1320462099436273715" } }
-        )
-    } catch (e) {
-        logger.error(`Error updating votes: ${e}`);
-    }
 }
 
 start();
