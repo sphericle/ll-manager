@@ -100,7 +100,6 @@ async function start() {
     } catch (e) {
         logger.error(`Error setting presence: ${e}`);
     }
-    
 }
 
 start();

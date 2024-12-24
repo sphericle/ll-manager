@@ -16,9 +16,7 @@ module.exports = {
             subcommand.setName("no").setDescription("Add a no vote to a level")
         )
         .addSubcommand((subcommand) =>
-            subcommand
-                .setName("accept")
-                .setDescription("Accept a level")
+            subcommand.setName("accept").setDescription("Accept a level")
         )
         .addSubcommand((subcommand) =>
             subcommand
@@ -93,11 +91,11 @@ module.exports = {
                     );
 
                     // pin the message
-                    if (voteMessage)
-                        await voteMessage.pin();
-                        
-                    const message = await interaction.channel.send(`The vote is now at **${count}-${matchNo[1]}**.`);
+                    if (voteMessage) await voteMessage.pin();
 
+                    const message = await interaction.channel.send(
+                        `The vote is now at **${count}-${matchNo[1]}**.`
+                    );
 
                     // update the thread name
                     await interaction.channel.setName(
@@ -190,8 +188,7 @@ module.exports = {
                     );
 
                     // pin the message
-                    if (voteMessage)
-                        await voteMessage.pin();
+                    if (voteMessage) await voteMessage.pin();
 
                     // update the thread name
                     await interaction.channel.setName(

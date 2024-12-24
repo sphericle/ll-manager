@@ -11,7 +11,7 @@ const {
     githubRepo,
     githubDataPath,
     githubBranch,
-    guildId
+    guildId,
 } = require("../../config.json");
 const logger = require("log4js").getLogger();
 const Sequelize = require("sequelize");
@@ -442,7 +442,6 @@ module.exports = {
                             { name: "No", value: 0 }
                         )
                 )
-                
         ),
     async autocomplete(interaction) {
         const focused = interaction.options.getFocused(true);
@@ -492,7 +491,10 @@ module.exports = {
                     value: level.filename,
                 }))
             );
-        } else if (subcommand === "submitban" || subcommand === "setsubmissions") {
+        } else if (
+            subcommand === "submitban" ||
+            subcommand === "setsubmissions"
+        ) {
             const members = interaction.guild.members.cache;
             const filtered = members
                 .filter((member) =>
@@ -2024,21 +2026,24 @@ module.exports = {
             const matchLevelName = text.match(/^(.*)\s\d+-\d+$/);
             const matchYes = text.match(/(\d+)-\d+$/);
             const matchNo = text.match(/\d+-(\d+)$/);
-            
+
             const level = await db.levelsInVoting.findOne({
                 where: { discordid: interaction.channel.id },
             });
 
-            if (!level) return await interaction.editReply(":x: level not found");
+            if (!level)
+                return await interaction.editReply(":x: level not found");
 
-            db.levelsInVoting.update({
-                levelname: matchLevelName[1],
-                yeses: matchYes[1],
-                nos: matchNo[1],
-            }, {
+            db.levelsInVoting.update(
+                {
+                    levelname: matchLevelName[1],
+                    yeses: matchYes[1],
+                    nos: matchNo[1],
+                },
+                {
                     where: {
-                        discordid: interaction.channel.id
-                    }
+                        discordid: interaction.channel.id,
+                    },
                 }
             );
         } else if (interaction.options.getSubcommand() === "submitban") {
@@ -2046,45 +2051,57 @@ module.exports = {
             const user = await interaction.options.getString("submitteruser");
             const unban = await interaction.options.getInteger("unban");
             if (unban === 1) {
-                await db.submitters.update({
-                    banned: false
-                }, {
-                    where: {
-                        discordid: user
+                await db.submitters.update(
+                    {
+                        banned: false,
+                    },
+                    {
+                        where: {
+                            discordid: user,
+                        },
                     }
-                });
-                return await interaction.editReply("The user has been unbanned");
+                );
+                return await interaction.editReply(
+                    "The user has been unbanned"
+                );
             }
-            await db.submitters.update({
-                banned: true
-            }, {
-                where: {
-                    discordid: user
+            await db.submitters.update(
+                {
+                    banned: true,
+                },
+                {
+                    where: {
+                        discordid: user,
+                    },
                 }
-            });
+            );
 
             const guild = await interaction.client.guilds.fetch(guildId);
 
             const levels = await db.levelsInVoting.findAll({
-                where: { submitter: user }
-            })
+                where: { submitter: user },
+            });
 
             levels.forEach(async (level) => {
                 // get discord thread associated with level.discordid
                 const channel = await guild.channels.cache.get(level.discordid);
 
-                await channel.send(`:x: The submitter of this level has been submission banned, rejecting...`);
+                await channel.send(
+                    `:x: The submitter of this level has been submission banned, rejecting...`
+                );
 
-                await channel.setName(`${level.levelname} (REJECTED)`)
-                
-                await channel.setArchived(true)
-            })
+                await channel.setName(`${level.levelname} (REJECTED)`);
 
-            await db.levelsInVoting.destroy({
-                where: { submitter: user }
+                await channel.setArchived(true);
             });
 
-            return await interaction.editReply(":x: This user has been banned!");
+            await db.levelsInVoting.destroy({
+                where: { submitter: user },
+            });
+
+            return await interaction.editReply(
+                ":x: This user has been banned!"
+            );
         }
     },
 };

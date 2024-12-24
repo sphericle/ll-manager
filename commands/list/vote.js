@@ -1,5 +1,10 @@
 const { SlashCommandBuilder } = require("discord.js");
-const { guildId, reliableThreadID, staffRole, submissionsChannelID } = require("../../config.json");
+const {
+    guildId,
+    reliableThreadID,
+    staffRole,
+    submissionsChannelID,
+} = require("../../config.json");
 const logger = require("log4js").getLogger();
 
 module.exports = {
@@ -135,10 +140,10 @@ module.exports = {
             let levels;
             if (await interaction.member.roles.cache.has(staffRole))
                 levels = await db.levelsInVoting.findAll();
-
-            else levels = await db.levelsInVoting.findAll({
-                where: { submitter: interaction.user.id },
-            });
+            else
+                levels = await db.levelsInVoting.findAll({
+                    where: { submitter: interaction.user.id },
+                });
             return await interaction.respond(
                 levels
                     .filter((lvl) =>
@@ -204,9 +209,11 @@ module.exports = {
                 return interaction.editReply(
                     ":x: You have reached the maximum number of submissions per month."
                 );
-            
+
             if (user.banned)
-                return interaction.editReply(':x: You have been banned from submitting levels.');
+                return interaction.editReply(
+                    ":x: You have been banned from submitting levels."
+                );
 
             const guild = await interaction.client.guilds.fetch(guildId);
 
@@ -229,7 +236,9 @@ module.exports = {
             });
 
             logger.log(`Created thread: ${thread.name}`);
-            const logChannel = await guild.channels.cache.get(submissionsChannelID);
+            const logChannel = await guild.channels.cache.get(
+                submissionsChannelID
+            );
             await logChannel.send(message);
 
             // increment user's submission count
@@ -283,18 +292,22 @@ module.exports = {
         } else if (subcommand === "status") {
             const { db } = require("../../index.js");
             const level = await interaction.options.getString("levelname");
-            
-            const hasStaffRole = await interaction.member.roles.cache.has(staffRole);
+
+            const hasStaffRole = await interaction.member.roles.cache.has(
+                staffRole
+            );
 
             let submission;
             try {
                 submission = await db.levelsInVoting.findOne({
-                    where: !hasStaffRole ? {
-                        discordid: level,
-                        submitter: interaction.user.id,
-                    } : {
-                        discordid: level,
-                    },
+                    where: !hasStaffRole
+                        ? {
+                              discordid: level,
+                              submitter: interaction.user.id,
+                          }
+                        : {
+                              discordid: level,
+                          },
                 });
             } catch (error) {
                 logger.error(error);
