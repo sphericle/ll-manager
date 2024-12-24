@@ -634,7 +634,7 @@ module.exports = {
                     { name: "Link", value: `${linkStr}`, inline: true },
                     {
                         name: "Enjoyment",
-                        value: `${enjoyment || "None"}`,
+                        value: enjoyment ? `${enjoyment}/10` : "None",
                         inline: true,
                     },
                     { name: "FPS", value: `${fps}`, inline: true }
@@ -1114,7 +1114,7 @@ module.exports = {
                     { name: "Link", value: `${newDevice}`, inline: true },
                     {
                         name: "Enjoyment",
-                        value: `${newEnjoyment || "None"}`,
+                        value: newEnjoyment ? `${newEnjoyment}/10` : "None",
                         inline: true,
                     },
                     { name: "FPS", value: `${newFPS}`, inline: true }
