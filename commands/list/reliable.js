@@ -200,7 +200,7 @@ module.exports = {
 
                     // update entry in db
                     await db.levelsInVoting.update(
-                        { yeses: count },
+                        { nos: count },
                         { where: { discordid: await interaction.channel.id } }
                     );
 
